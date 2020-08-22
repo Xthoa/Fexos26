@@ -1,0 +1,3 @@
+copy boot\boot.bin 0
+copy boot\loader.bin 1
+copy kernel\start.bin 3
