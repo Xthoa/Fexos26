@@ -2,18 +2,17 @@
 ;fexos 26
 bits 16
 %include "desc.inc"
-org 07e00h
-cli
+org 0b000h
+
 ;1.open a20
 in al,92h
 or al,010b
 out 92h,al
-;2.load gdt
-lgdt [gdtr]
-;3.open cr0.pe
+;2.open cr0.pe
 mov eax,cr0
 or eax,1
 mov cr0,eax
+;3.jmp to 32
 jmp dword 16:Sec32
 bits 32
 Sec32:
@@ -36,7 +35,6 @@ add eax,0x1000
 loop .loop1
 ;7.init page tab lv.1
 mov dword [PDE],PDE_TAB+PTE
-mov dword [PDE+4],PDE_4M+PTE
 ;8.open paging
 mov eax,PDE
 mov cr3,eax
@@ -85,7 +83,7 @@ sti
 ;16.set c stack
 mov esp,07b00h
 ;17.jump to c
-jmp 0x8200
+jmp 0xb400
 
 dispintmsg:
 	push ecx
@@ -98,45 +96,45 @@ dispintmsg:
 	call putint
 	ret
 aints:
-ints equ aints-$$+0x7e00
+ints equ aints-$$+0xb000
 	xor ecx,ecx
 	call dispintmsg
 	iretd
-aint_03:
-int_03 equ aint_03-$$+0x7e00
-	mov cl,3		;#BP breakpoint
-	call dispintmsg
-	iretd
 aint_08:
-int_08 equ aint_08-$$+0x7e00
+int_08 equ aint_08-$$+0xb000
 	mov ecx,8		;#DF double fault
 	call dispintmsg
 	add esp,4
 	iretd
 aint_0b:
-int_0b equ aint_0b-$$+0x7e00
+int_0b equ aint_0b-$$+0xb000
 	mov ecx,0x0b	;#NP segment not present
 	call dispintmsg
 	add esp,4
 	iretd
 aint_0d:
-int_0d equ aint_0d-$$+0x7e00
+int_0d equ aint_0d-$$+0xb000
 	mov ecx,0x0d	;#GP general protection
 	call dispintmsg
 	add esp,4
 	iretd
 aint_0e:
-int_0e equ aint_0e-$$+0x7e00
+int_0e equ aint_0e-$$+0xb000
 	mov ecx,0x0e	;#PF page fault
 	call dispintmsg
 	add esp,4
+	iretd
+aint_u:
+int_u equ aint_u-$$+0xb000
+	mov ecx,0xff
+	call dispintmsg
 	iretd
 irqback:
 	mov al,0x20
 	out 0x20,al
 	ret
 aint_21:
-int_21 equ aint_21-$$+0x7e00
+int_21 equ aint_21-$$+0xb000
 	call irqback
 	in al,0x60
 	mov edx,eax
@@ -145,27 +143,23 @@ int_21 equ aint_21-$$+0x7e00
 	call putint
 	iretd
 aint_27:
-int_27 equ aint_27-$$+0x7e00
+int_27 equ aint_27-$$+0xb000
 	call irqback
 	iretd
 
 %include "pmio.inc"
 
-gdtr:
-	dw 8*3-1
-	dd GDTR
 idtr:
 	dw 8*0x40-1
 	dd IDTR
 intmsg:
 	db "Int 0x"
 idt:
-%rep 3
+%rep 6
 	Gate ints,16,0,GATE_INT
 %endrep
-	Gate int_03,16,0,GATE_INT
-%rep 4
-	Gate ints,16,0,GATE_INT
+%rep 2
+	Gate int_u,16,0,GATE_INT
 %endrep
 	Gate int_08,16,0,GATE_INT
 	Gate ints,16,0,GATE_INT

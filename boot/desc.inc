@@ -7,7 +7,7 @@
 	db ( %1 >> 24) & 0FFh
 %endmacro
 ;Descriptor Base(32),Limit(20),Attributes(macros)
-GDTR equ 0xb000
+GDTR equ 0xa000
 SEG_RPL equ 1
 DPL equ 0x20
 SEG32 equ 0x4000
@@ -31,8 +31,8 @@ PGBASE equ 3
 PDE_4M equ 0x80|PGBASE
 PDE_TAB equ PGBASE
 PTE_4K equ PGBASE
-PDE equ 09000h
-PTE equ 0a000h
+PDE equ 08000h
+PTE equ 09000h
 
 %macro Gate 4
 	dw %1 & 0xffff
@@ -51,4 +51,4 @@ GATEA_TASK equ 0x5
 
 GATE_BASE equ GATE_P|GATE32
 GATE_INT equ GATE_BASE|GATEA_INT
-IDTR equ 0xb800
+IDTR equ 0xa800

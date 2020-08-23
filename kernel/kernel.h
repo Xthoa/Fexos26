@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #define NULL 0
 #define Bool char
 #define True 1
@@ -9,14 +10,17 @@
 #define Usnd unsigned
 #define Ptr *
 #define Dwptr int
+#define size_t int
 #define elif else if
 #define pack __attribute__((packed))
 
-#define DISK 0x7c00
-#define PDE 0x9000
-#define PTE 0xa000
-#define GDT ((Descriptor*)0xb000)
-#define IDT ((Gate*)0xb800)
+#define MBR 0x7c00
+#define IPL MBR
+#define PDE 0x8000
+#define PTE 0x9000
+#define GDT ((Descriptor*)0xa000)
+#define IDT ((Gate*)0xa800)
+#define DISK 0xb000
 #define VRAM 0xB8000
 
 #define BLACK 0
@@ -87,22 +91,80 @@ typedef struct _FIFO{
 	int len,read,write;
 	int* buf;
 } Buffer,Cache,Fifo;
+typedef struct _REGS{
+	int cr3;
+	int eax,ecx,edx,ebx,esp,ebp,esi,edi;
+	int eflags,cs,eip;
+	int ds,ss,es,fs,gs;
+}pack REGS;
+typedef struct _TASK{
+	REGS regs;
+	int acs,tid,sel;
+}pack Task,*Htask;
+typedef struct _FREEINFO{
+	int addr,size;
+} Freeinfo;
+typedef struct _GMM{
+	Freeinfo *root;
+	int size;		//MAX=498
+} GMM,Allocator;
+typedef struct _ARDS{
+	Qword base;
+	Qword len;
+	Dword type;
+}pack ARDS;
+typedef struct _POS{
+	int x;
+	int y;
+} Position;
 
 extern Cache* kbdcac;
+extern Allocator* allocr;
+extern Position curpos;
+extern Cache* stdin;
+extern Bool kbd_flag;
+
+void* memset(void* dst,int val,int size);
 
 void int21_asm();
 void hlt();
 void out8(int port,int data);
+int strlen(const char* str);
+void int3_asm();
+void int0e_asm();
+void int0d_asm();
 
 void putchar(int row,int col,char ch,char color);
-void dispstr(int x,int y,char* str,char col);
+void dispstr(int x,int y,const char* str,char col);
 void putdigit(int x,int y,unsigned int dig,char col);
 void dispint(int x,int y,int dig,int val,char col);
 void cls_bg();
-void int21(int code);
+void set_gatedesc(int no,int off,int sel,int param,int attr);
 void fifo_init(Cache* c,int* buf,int len);
 int fifo_size(Cache* c);
 int read_cache(Cache* c);
 void write_cache(Cache* c,int data);
-void set_gatedesc(int no,int off,int sel,int param,int attr);
-void print_kbd_code(int code);
+void int21(int code);
+void init_allocator();
+void* malloc(int size);
+void* malloc_page(int pages);
+void free(void* memory,int size);
+void free_page(int mem,int pages);
+int puts(const char* str);
+int printf(const char* format,...);
+int log2(int val,int digs);
+void putint(int val);
+void putch(char c);
+int getch();
+void pause();
+void int3(); 
+int read_cache_wait(Cache* c);
+void write_cache_wait(Cache* c,int data);
+void int0e(int cr2,int code);
+int putstr(const char* str);
+void int0d(int code);
+int mem_left();
+void vramcpy(Position dst,Position src,int len);
+void vrammove(Position dst,Position src,int len);
+void* memcpy(void* dst,void* src,int size);
+void* memmove(void* dst,void* src,int size);

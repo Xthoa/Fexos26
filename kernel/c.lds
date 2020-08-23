@@ -1,6 +1,6 @@
 SECTIONS
 {
-	.text 0x8200 : {
+	.text 0xb400 : {
 		*(.entry)
 		*(.text)
 	}
