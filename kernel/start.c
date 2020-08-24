@@ -34,11 +34,10 @@ void entry(){
 	int buf[64];
 	fifo_init(&cac,buf,64);
 	kbdcac=&cac;
-	//kdb intr
 	set_gatedesc(0x21,(int)int21_asm,16,0,GATE_INT);
 	//3.init memory
 	init_allocator();
-	//4.enable ints
+	//4.enable error ints
 	set_gatedesc(0x03,(int)int3_asm,16,0,GATE_INT);
 	set_gatedesc(0x0d,(int)int0d_asm,16,0,GATE_INT);
 	set_gatedesc(0x0e,(int)int0e_asm,16,0,GATE_INT);
@@ -46,9 +45,11 @@ void entry(){
 	Cache input;
 	stdin=&input;
 	//6.kernel space & vram is not allowed for using
-	//total 1M [0x100 Pages] for kernel
-	malloc_page(0x100);
-	puts("Welcome to Fexos 1.1");
+	malloc_page(0x100);		//total 1M [0x100 Pages] for kernel
+	//7.check cpu
+	cpuids();
+	//8.main loop
+	puts("Welcome to Fexos 1.2");
 	while(1){
 		if(fifo_size(&cac)>0){
 			unsigned char key,code=read_cache(&cac);
@@ -208,9 +209,9 @@ void free(void* memory,int size){
 	free_page(((int)memory)>>12,(size+0xfff)>>12);
 }
 void free_page(int mem,int pages){
-	for(Freeinfo *f=allocr->root;f->size>0;f++){
+	for(Freeinfo *f=allocr->root;f->size>0 && f->size<=MAX_GLOB_ALOCR_TAB;f++){
 		if(f->addr+f->size==mem)f->size+=pages;
-		elif(f->addr-pages==mem)f->addr-=pages;
+		elif(f->addr-pages==mem)f->addr-=pages,f->size+=pages;
 		elif(((f->addr+f->size)<mem) && (((f+1)->addr-pages)>mem)){
 			memmove(f+1,f,(allocr->size-(f-allocr->root))*sizeof(f));
 			allocr->size++;
@@ -236,8 +237,10 @@ void putch(char c){
 		for(int i=0;i<len;i++)putch(' ');
 	}
 	else{
-		Position pos={curpos.x,curpos.y-1};
-		if((kbd_flag&64))vrammove(curpos,pos,79-curpos.y);
+		if((kbd_flag&64)){
+			Position pos={curpos.x,curpos.y+1};
+			vrammove(pos,curpos,79-curpos.y);
+		}
 		putchar(curpos.x,curpos.y,c,GREY);
 		curpos.y++;
 	}
@@ -266,7 +269,7 @@ int printf(const char* format,...){
 		if(c==0)return False;
 		if(c=='x')putint(va_arg(v,int));
 		elif(c=='c')putch(va_arg(v,int));
-		elif(c=='s')putstr(va_arg(v,const char*));
+		elif(c=='s')putstr(va_arg(v,char*));
 		else return False;
 	}
 	va_end(v);
@@ -319,8 +322,32 @@ void *memmove(void* dst,void* src,int size){
 	if(dst<src){
 		while(size--)*(d++)=*(s++);
 	}else{
-		dst+=size;
-		src+=size;
+		d+=size;
+		s+=size;
 		while(size--)*(--d)=*(--s);
 	}
+}
+void cpuids(){
+	puts("CPU Info:");
+	int buf[17]={0},max,maxx;
+	cpuid(0,buf);
+	max=buf[0];
+	printf("Max Function Code: %x\n",max);
+	buf[4]=buf[3];
+	buf[3]=buf[2];
+	buf[2]=buf[4];
+	buf[4]=0;
+	printf("Vendor: %s\n",(char*)(buf+1));
+	cpuid(0x80000000,buf);
+	maxx=buf[0];
+	printf("Max Extend Func Code: %x\n",maxx);
+	if(maxx<0x80000004){
+		puts("CPUID Extend Functions Not Supported");
+		return;
+	}
+	cpuid(0x80000002,buf);
+	cpuid(0x80000003,buf+4);
+	cpuid(0x80000004,buf+8);
+	printf("Cpu Name: %s\n",buf);
+	return;
 }

@@ -1,21 +1,21 @@
 src = boot\boot.bin boot\loader.bin kernel\start.bin
 need = rule.txt
 
-default:
-	make img
+default: fexos.img
 
-debug:
-	make img
+debug: fexos.img makefile
 	bochsdbg -log vmlog.txt -f bochsrc.txt
 
-run:
-	make img
+run: fexos.img makefile
 	bochs -log vmlog.txt -f bochsrc.txt
 
+qemu: fexos.img makefile
+	qemu.bat
+
 img:
-	make -C boot
-	make -C kernel
 	make fexos.img
 
 fexos.img: $(src) $(need) makefile
+	make -C boot
+	make -C kernel
 	imager rule.txt fexos.img

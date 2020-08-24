@@ -1,6 +1,6 @@
 ;asm funcs
 global _int21_asm,_hlt,_out8
-global _int3_asm,_int0e_asm,_int0d_asm
+global _int3_asm,_int0e_asm,_int0d_asm,_cpuid
 extern _int21,_int3,_int0e,_int0d
 _int21_asm:
 	xor eax,eax
@@ -32,3 +32,20 @@ _int0d_asm:
 	call _int0e
 	add esp,4
 	iretd
+_cpuid:
+	push edi
+	push ebx
+	push ecx
+	push edx
+	mov eax,[esp+20]
+	cpuid
+	mov edi,[esp+24]
+	mov [edi],eax
+	mov [edi+4],ebx
+	mov [edi+8],ecx
+	mov [edi+12],edx
+	pop edx
+	pop ecx
+	pop ebx
+	pop edi
+	ret

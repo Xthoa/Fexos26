@@ -60,6 +60,8 @@
 #define GATE_BASE DESC_P|GATE32
 #define GATE_INT GATE_BASE|GATEA_INT
 
+#define MAX_GLOB_ALOCR_TAB 398
+
 typedef enum _KBD{
 	KEY_ESC=0x80,
 	KEY_CTRL_L,KEY_CTRL_R,KEY_SHIFT_L,KEY_SHIFT_R,KEY_ALT_L,KEY_ALT_R,
@@ -133,6 +135,7 @@ int strlen(const char* str);
 void int3_asm();
 void int0e_asm();
 void int0d_asm();
+void cpuid(int eax,int* buf);
 
 void putchar(int row,int col,char ch,char color);
 void dispstr(int x,int y,const char* str,char col);
@@ -152,7 +155,6 @@ void free(void* memory,int size);
 void free_page(int mem,int pages);
 int puts(const char* str);
 int printf(const char* format,...);
-int log2(int val,int digs);
 void putint(int val);
 void putch(char c);
 int getch();
@@ -168,3 +170,4 @@ void vramcpy(Position dst,Position src,int len);
 void vrammove(Position dst,Position src,int len);
 void* memcpy(void* dst,void* src,int size);
 void* memmove(void* dst,void* src,int size);
+void cpuids();
