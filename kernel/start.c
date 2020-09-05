@@ -26,36 +26,49 @@ void entry(){
 		KEY_DOWN,KEY_PGDN,KEY_INS,KEY_DEL,
 		0,0,0,0,0,0,0,KEY_GUI_L,KEY_GUI_R,KEY_APPS,KEY_POWER,KEY_SLEEP,0,0,0,KEY_WAKE
 	};
+	bootinfo=(BootInfo*)0x500;
 	//1.init screen
 	cls_bg();
 	curpos.x=curpos.y=0;
-	//2.init kbd
+	//2.init stdin
 	Cache cac;
 	int buf[64];
 	fifo_init(&cac,buf,64);
 	kbdcac=&cac;
-	set_gatedesc(0x21,(int)int21_asm,16,0,GATE_INT);
-	//3.init memory
+	Cache input;
+	int buf2[64];
+	fifo_init(&input,buf2,64);
+	stdin=&input;
+	//4.init memory
 	init_allocator();
-	//4.enable error ints
+	disable_page(0,0x100);		//total 1M [0x100 Pages] for kernel
+	//5.set idt
 	set_gatedesc(0x03,(int)int3_asm,16,0,GATE_INT);
 	set_gatedesc(0x0d,(int)int0d_asm,16,0,GATE_INT);
 	set_gatedesc(0x0e,(int)int0e_asm,16,0,GATE_INT);
-	//5.init stdin
-	Cache input;
-	stdin=&input;
-	//6.kernel space & vram is not allowed for using
-	malloc_page(0x100);		//total 1M [0x100 Pages] for kernel
-	//7.check cpu
+	set_gatedesc(0x20,(int)int20_asm,16,0,GATE_INT);
+	set_gatedesc(0x21,(int)int21_asm,16,0,GATE_INT);
+	set_gatedesc(0x30,(int)int30_asm,16,0,GATE_INT);
+	set_gatedesc(0x31,(int)int31_asm,16,0,GATE_INT);
 	cpuids();
-	//8.main loop
-	puts("Welcome to Fexos 1.2");
+	init_fs();
+	segcnt=4;
+	init_mt();
+	Htask sys=create_task_0();
+	Htask app=create_task("Task B");
+	task_init(app,(int)task_b);
+	//dispmem();
+	task_ready(sys);
+	task_ready(app);
+	//9.init clocks
+	init_pit();
+	enable_pic(0xff78);
+	puts("Welcome to Fexos 1.3");
 	while(1){
 		if(fifo_size(&cac)>0){
 			unsigned char key,code=read_cache(&cac);
 			if(code==0xe1){
 				for(int i=0;i<3;i++)read_cache_wait(&cac);
-				pause();
 			}
 			elif(code==0xe0)kbd_flag|=1;
 			elif(code>=0x80){
@@ -78,276 +91,81 @@ void entry(){
 				elif(key==KEY_CAPS)kbd_flag^=8;
 				elif(key==KEY_ALT_L || key==KEY_ALT_R)kbd_flag|=16;
 				elif(key==KEY_CTRL_L || key==KEY_CTRL_R)kbd_flag|=32;
-				write_cache(stdin,key);
+				write_cache(find_task(2)->c,key);
 			}
-		}
+		}/*
 		if(fifo_size(stdin)>0){
 			int key=read_cache(stdin);
-			if(key<0x80)putch(key);
+			/*if(key<0x80)putch(key);
 			elif(key==KEY_PAD_ENTER)putch('\n');
 			elif(key==KEY_LEFT || key==KEY_PAD_LEFT)curpos.y?curpos.y--:curpos.y;
 			elif(key==KEY_RIGHT || key==KEY_PAD_RIGHT)curpos.y<80?curpos.y++:curpos.y;
-			elif(key==KEY_UP || key==KEY_PAD_UP)curpos.x?curpos.x--:curpos.x;
-			elif(key==KEY_DOWN || key==KEY_PAD_DOWN)curpos.x<25?curpos.x++:curpos.x;
+			//elif(key==KEY_UP || key==KEY_PAD_UP)curpos.x?curpos.x--:curpos.x;
+			//elif(key==KEY_DOWN || key==KEY_PAD_DOWN)curpos.x<25?curpos.x++:curpos.x;
 			elif(key==KEY_INS || key==KEY_PAD_INS)kbd_flag^=64;
-			elif(key==KEY_DEL || key==KEY_PAD_DEL)putch(0x7f);
-		}
+			elif(key==KEY_DEL || key==KEY_PAD_DEL)putch(0x7f);*
+			write_cache(find_task(2)->c,key);
+		}*/
+		hlt();
 	}
-}
-void putchar(int row,int col,char ch,char color){
-	*(char*)(VRAM+row*160+col*2+1)=color;
-	*(char*)(VRAM+row*160+col*2)=ch;
-}
-void dispstr(int x,int y,const char* str,char col){
-	while(*str){
-		char c=*str;
-		if(c=='\n')x++,y=0;
-		elif(c=='\r')y=0;
-		elif(c=='\b')y--;
-		elif(c=='\t')y=(y|3)+1;
-		else putchar(x,y,*str,col);
-		str++;
-		y++;
-		if(y==80)x++,y=0;
-	}
-}
-void putdigit(int x,int y,unsigned int dig,char col){
-	if(dig>9)putchar(x,y,dig+'A'-10,col);
-	else putchar(x,y,dig+'0',col);
-}
-void dispint(int x,int y,int dig,int val,char col){
-	y+=dig-1;
-	for(;dig;dig--){
-		putdigit(x,y--,(unsigned int)val%16,col);
-		val>>=4;
-	}
-}
-void putint(int val){
-	dispint(curpos.x,curpos.y,8,val,GREY);
-	curpos.y+=8;
 }
 void cls_bg(){
 	memset((void*)VRAM,0,80*25*2);
 }
-Cache* kbdcac;
-void int21(int code){
-	write_cache(kbdcac,code);
-}
-void fifo_init(Cache* c,int* buf,int len){
-	c->buf=buf;
-	c->read=c->write=0;
-	c->len=len;
-}
-int fifo_size(Cache* c){
-	int ret=c->write-c->read;
-	if(ret<0)ret=c->len-ret;
-	return ret;
-}
-int read_cache(Cache* c){
-	if(c->write==c->read)return 0;
-	int ret=c->buf[c->read];
-	c->read++;
-	if(c->read==c->len)c->read=0;
-	return ret;
-}
-void write_cache(Cache* c,int data){
-	if(c->write==(c->read-1))return;
-	c->buf[c->write]=data;
-	c->write++;
-	if(c->write==c->len)c->write=0;
-}
-void set_gatedesc(int no,int off,int sel,int param,int attr){
-	Gate* gt=(IDT+no);
-	gt->off=off&0xffff;
-	gt->off2=off>>16;
-	gt->sel=sel&0xffff;
-	gt->param=param;
-	gt->attr=attr;
-}
-Allocator* allocr;
-void init_allocator(){
-	static const char* types[]={"Usable","Reserved","ACPI","Sleep","Unexist"};
-	int all;
-	ARDS *ards=(ARDS*)0x510;
-	allocr=(Allocator*)0x2000;
-	allocr->root=0x2008; 
-	allocr->size=0;
-	puts("Memory Map:");
-	for(int i=0;i<(*(short*)0x502);i++){
-		int tp=ards[i].type;
-		printf("%x %x %s\n",(int)ards[i].base,(int)ards[i].len,types[tp-1]);
-		if(tp==1){
-			all+=(ards[i].len/4096);
-			Freeinfo *f=((Freeinfo*)0x2008)+(allocr->size++);
-			f->addr=(int)ards[i].base/4096;
-			f->size=(int)ards[i].len/4096;
-		}
-	}
-	printf("Total %x records with %x pages free\n",allocr->size,all);
-}
-void* malloc(int size){
-	malloc_page((size+0xfff)>>12);
-}
-void* malloc_page(int pages){
-	for(int i=0;i<allocr->size;i++){
-		Freeinfo* f=&(allocr->root[i]);
-		if(f->size==pages){
-			memcpy(f,f+1,(allocr->size-(f-allocr->root))*sizeof(f));
-			allocr->size--;
-			return (void*)(f->addr*4096);
-		}
-		if(f->size>pages){
-			int ret=f->addr*4096;
-			f->addr+=pages;
-			f->size-=pages;
-			return (void*)ret;
-		}
-	}
-	return NULL;
-}
-void free(void* memory,int size){
-	free_page(((int)memory)>>12,(size+0xfff)>>12);
-}
-void free_page(int mem,int pages){
-	for(Freeinfo *f=allocr->root;f->size>0 && f->size<=MAX_GLOB_ALOCR_TAB;f++){
-		if(f->addr+f->size==mem)f->size+=pages;
-		elif(f->addr-pages==mem)f->addr-=pages,f->size+=pages;
-		elif(((f->addr+f->size)<mem) && (((f+1)->addr-pages)>mem)){
-			memmove(f+1,f,(allocr->size-(f-allocr->root))*sizeof(f));
-			allocr->size++;
-		}
-	}
-}
-Position curpos;
-void putch(char c){
-	if(c=='\n')curpos.x++,curpos.y=0;
-	elif(c=='\r')curpos.y=0;
-	elif(c=='\b'){
-		if(curpos.y==0)return;
-		Position pos={curpos.x,curpos.y-1};
-		vramcpy(pos,curpos,80-curpos.y);
-		curpos.y--;
-	}
-	elif(c==0x7f){
-		Position pos={curpos.x,curpos.y+1};
-		vramcpy(curpos,pos,79-curpos.y);
-	}
-	elif(c=='\t'){
-		int len=(curpos.y|3)+1-curpos.y;
-		for(int i=0;i<len;i++)putch(' ');
-	}
-	else{
-		if((kbd_flag&64)){
-			Position pos={curpos.x,curpos.y+1};
-			vrammove(pos,curpos,79-curpos.y);
-		}
-		putchar(curpos.x,curpos.y,c,GREY);
-		curpos.y++;
-	}
-	if(curpos.y>=80)curpos.x++,curpos.y=0;
-}
-int putstr(const char* str){
-	while(*str){
-		putch(*str);
-		str++;
-	}
-	return True;
-}
-int puts(const char* str){
-	putstr(str);
-	putch('\n');
-}
-int printf(const char* format,...){
-	va_list v;
-	va_start(v,format);
-	for(int i=0;format[i]!=0;i++){
-		if(format[i]!='%'){
-			putch(format[i]);
-			continue;
-		}
-		char c=format[++i];
-		if(c==0)return False;
-		if(c=='x')putint(va_arg(v,int));
-		elif(c=='c')putch(va_arg(v,int));
-		elif(c=='s')putstr(va_arg(v,char*));
-		else return False;
-	}
-	va_end(v);
-	return True;
-}
-void pause(){
-	int3();
-}
-void int3(){
-	printf("Press any key to continue...\n");
-	getch();
-}
 Cache* stdin;
-int getch(){
-	return read_cache_wait(stdin);
-}
-int read_cache_wait(Cache* c){
-	while(fifo_size(c)==0);
-	return read_cache(c);
-}
-void write_cache_wait(Cache* c,int data){
-	while(fifo_size(c)==c->len-1);
-	write_cache(c,data);
-}
-void int0e(int cr2,int code){
-	printf("#PF cr2=%x code=%x\n",cr2,code);
-}
-void int0d(int code){
-	printf("#GP code=%x\n",code);
-}
-int mem_left(){
-	int total=0;
-	for(int i=0;i<allocr->size;i++){
-		total+=allocr->root[i].size;
-	}
-	return total;
-}
-void vramcpy(Position dst,Position src,int len){
-	memcpy((void*)(VRAM+dst.x*160+dst.y*2),(void*)(VRAM+src.x*160+src.y*2),len*2);
-}
-void vrammove(Position dst,Position src,int len){
-	memmove((void*)(VRAM+dst.x*160+dst.y*2),(void*)(VRAM+src.x*160+src.y*2),len*2);
-}
-void *memcpy(void* dst,void* src,int size){
-	char *d=dst,*s=src;
-	while(size--)*(d++)=*(s++);
-}
-void *memmove(void* dst,void* src,int size){
-	char *d=dst,*s=src;
-	if(dst<src){
-		while(size--)*(d++)=*(s++);
-	}else{
-		d+=size;
-		s+=size;
-		while(size--)*(--d)=*(--s);
-	}
-}
+BootInfo* bootinfo;
 void cpuids(){
-	puts("CPU Info:");
-	int buf[17]={0},max,maxx;
+	int buf[17]={0};
 	cpuid(0,buf);
-	max=buf[0];
-	printf("Max Function Code: %x\n",max);
+	bootinfo->cpuid.max_func=buf[0];
 	buf[4]=buf[3];
 	buf[3]=buf[2];
 	buf[2]=buf[4];
-	buf[4]=0;
-	printf("Vendor: %s\n",(char*)(buf+1));
+	memcpy(bootinfo->cpuid.vendor,buf+1,12);
 	cpuid(0x80000000,buf);
-	maxx=buf[0];
-	printf("Max Extend Func Code: %x\n",maxx);
-	if(maxx<0x80000004){
-		puts("CPUID Extend Functions Not Supported");
-		return;
-	}
+	bootinfo->cpuid.max_ext_func=buf[0];
+	if(bootinfo->cpuid.max_ext_func<0x80000004)return;
 	cpuid(0x80000002,buf);
 	cpuid(0x80000003,buf+4);
 	cpuid(0x80000004,buf+8);
-	printf("Cpu Name: %s\n",buf);
+	memcpy(bootinfo->cpuid.name,buf,48);
 	return;
 }
+void task_b(){
+	puts("Task B");
+	Htask t=create_task("app");
+	int stack=malloc_page(1),esp=stack+PAGE_SIZE-8;
+	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
+	*(char**)(esp+4)="file";
+	task_ready(t);
+	while(1);
+}
+void app_startup(char* name){
+	Cache c;
+	int buf[32];
+	Htask self=task_now();
+	fifo_init(&c,buf,32);
+	self->c=&c;
+	File* f=fopen(name);
+	int* p=filepos(f);
+	int data=*(p++);
+	int bss=*(p++);
+	int entry=*(p++);
+	App a;
+	int stack=malloc_page(data+bss);
+	int stack_lin=push_page(stack,2,data+bss);
+	//printf("T9 %x %x\n",stack,stack+(data+bss)*PAGE_SIZE-1);
+	int sc=segcnt;
+	segcnt+=3;
+	set_segmdesc(sc,p,f->len-1,SEG_CODE);
+	set_segmdesc(sc+1,stack_lin,(data+bss)*PAGE_SIZE-1,SEG_DATA);
+	set_segmdesc(sc+2,p,f->len-1,SEG_DATA);
+	a.cs=sc*8;
+	a.eip=entry;
+	self->ss=a.ss=(sc+1)*8;
+	a.esp=(data+bss)*PAGE_SIZE-9;	//reserve space of 2 arg
+	putch('S');
+	app_startup_asm(&a);
+	putch('F');
+	while(1);
+} 

@@ -1,16 +1,28 @@
-default: start.bin
+objs = start.o memory.o task.o io.o cache.o intapi.o file.o desc.o fasm.obj intapia.obj
 
-start.o: start.c makefile
-	gcc -c -m32 -O2 -std=c11 start.c -o start.o
+default: start.bin test.fex
 
-fasm.o: fasm.asm makefile
-	nasm fasm.asm -o fasm.o -f elf32
+%.o: %.c makefile kernel.h
+	gcc -c -m32 -O2 -std=c11 $*.c -o $*.o
 
-start.b: start.o fasm.o c.lds makefile
-	gld -T c.lds start.o fasm.o -o start.b
+%.obj: %.asm makefile
+	nasm $*.asm -o $*.obj -f elf32
+
+start.b: $(objs) c.lds makefile
+	gld -T c.lds $(objs) -o start.b
 
 start.bin: start.b makefile
 	objcopy -O binary -j .text -j .rdata start.b start.bin
 
+test.fex: t2.o fexos.h fexos.lib startup.lib t2.lds makefile
+	gld -T t2.lds t2.o fexos.lib -o test.b -e _entry
+	objcopy -O binary -j .text -j .rdata test.b test.bin
+	mkexe -i test.bin -o test.fex -d 16 -b 0 -e 0
+
+fexos.lib: fexos.asm startup.asm fexos.h makefile
+	nasm fexos.asm -o fexos.o -f win
+	nasm startup.asm -o startup.o -f win
+	ar -rc fexos.lib fexos.o startup.o
+
 clean:
-	del start.gas start.nas start.asm
+	del *.o start.b

@@ -4,27 +4,23 @@ bits 16
 %include "desc.inc"
 org 0b000h
 
-;1.open a20
-in al,92h
-or al,010b
-out 92h,al
-;2.open cr0.pe
+;1.open cr0.pe
 mov eax,cr0
 or eax,1
 mov cr0,eax
-;3.jmp to 32
+;2.jmp to 32
 jmp dword 16:Sec32
 bits 32
 Sec32:
-;4.init segreg
+;3.init segreg
 mov ax,8
 mov ds,ax
 mov es,ax
 mov fs,ax
 mov gs,ax
-;5.set stack
+;4.set stack
 mov ss,ax
-;6.init page dir lv.2
+;5.init page dir lv.2
 mov ebx,PTE
 mov eax,PTE_4K
 mov ecx,1024
@@ -33,9 +29,9 @@ mov [ebx],eax
 add ebx,4
 add eax,0x1000
 loop .loop1
-;7.init page tab lv.1
+;6.init page tab lv.1
 mov dword [PDE],PDE_TAB+PTE
-;8.open paging
+;7.open paging
 mov eax,PDE
 mov cr3,eax
 mov eax,cr4
@@ -46,12 +42,13 @@ or eax,0x80000000
 mov cr0,eax
 jmp next
 next:
-;9:move idt and load it
+;8.move idt
 mov esi,idt
 mov edi,IDTR
 mov ecx,8*0x40
 cld
 rep movsb
+;9.load idt
 lidt [idtr]
 ;10.init pic icw1
 mov al,0x11
@@ -74,7 +71,7 @@ out 0x21,al
 nop
 out 0xa1,al
 ;14.ocw1
-mov al,001111001b	;keyboard + pic1
+mov al,001111001b
 out 0x21,al
 mov al,011111111b
 out 0xa1,al

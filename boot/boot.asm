@@ -3,7 +3,7 @@
 bits 16
 %include "desc.inc"
 org 07c00h
-Sectors equ 18
+Sectors equ 36
 ;1.print boot message
 mov si,msg
 call puts
@@ -17,17 +17,17 @@ xor dx,dx	;head 0
 mov cx,2	;sector 2 ; cylinder 0
 read:
 mov ah,2	;function
-mov al,2	;sectors count
+mov al,1	;sectors count
 xor dl,dl
-add word [0x504],2
+add word [0x504],1
 int 13h
 jc err
 cmp word [0x504],Sectors
 jz next
 mov ax,es
-add ax,0x40
+add ax,0x20
 mov es,ax
-add cl,2
+inc cl
 cmp cl,18
 jbe read
 mov cl,1
@@ -59,7 +59,7 @@ mov word [0x500],file_end-$$
 mov word [0x502],0
 mov di,0x510
 xor bx,bx
-loop:
+_loop:
 mov eax,0xE820
 mov edx,0x534D4150
 mov ecx,20
@@ -68,12 +68,26 @@ jc fail
 add di,20
 inc word [0x502]
 or ebx,ebx
-jnz loop
+jnz _loop
+;7.get freq
+mov ah,2
+int 1ah
+mov word [0x506],cx
+mov byte [0x508],dh
+mov ah,4
+int 1ah
+mov word [0x50a],cx
+mov word [0x50c],dx
+clc
 ;7.clear int
 cli
 ;8.load gdtr
 lgdt [gdtr]
-;9.jmp to loader
+;9.open a20
+in al,92h
+or al,010b
+out 92h,al
+;10.jmp to loader
 jmp 0b000h
 
 fail:
@@ -104,7 +118,7 @@ gdt:
 	Descriptor 0,0xFFFFF,SEG_DATA
 	Descriptor 0,0xFFFFF,SEG_CODE
 gdtr:
-	dw 8*3-1
+	dw 8*0x10-1
 	dd GDTR
 
 %include "rmio.inc"
