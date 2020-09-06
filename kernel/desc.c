@@ -19,11 +19,11 @@ void int3(){
 void int0e(int cr2,int code,int eip){
 	printf("#PF cr2=%x code=%x eip=%x\n",cr2,code,eip);
 }
-void int0d(int code){
-	printf("#GP code=%x\n",code);
+void int0d(int code,int cs,int eip){
+	printf("#GP code=%x cs=%x eip=%x\n",code,cs,eip);
 }
 Dword clock;
-// #define qemu
+#define qemu
 #ifdef qemu
 #define TASK_TIME 1
 #else
@@ -44,14 +44,10 @@ void init_pit(){
 }
 char* push_page(char* raw,int start,int pages){
 	Htask task=task_now();
-	//printf("T11 %x %x\n",task,task->pte);
 	for(int i=start;i<pages+start;i++){
 		task->pte[i]=PTE_4K+raw+i*4096;
 	}
-	//printf("T12 %2x %2x %x\n",start,pages,raw);
-	int ret=task->tid*0x00400000+start*0x1000;
-	//printf("T13 %x\n",ret);
-	return ret;	//pte_n = tid
+	return task->tid*0x00400000+start*0x1000;	//pte_n = tid
 }
 char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages){
 	pde[pte_n]=pte+PDE_TAB;
@@ -64,7 +60,6 @@ void set_segmdesc(int no,int base,int limit,int attr){
 		limit>>=12;
 	}
 	Descriptor* d=(GDT+no);
-	//printf("T8 %x %x %x %x\n",d,base,limit,attr);
 	d->limit=limit&0xffff;
 	d->base=base&0xffff;
 	d->base2=(base>>16)&0xff;

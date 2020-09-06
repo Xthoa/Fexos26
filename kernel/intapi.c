@@ -7,7 +7,7 @@ int apideliv(int ino,int edi,int esi,int ebp,int esp,int ebx,int edx,int ecx,int
 	elif(ino==0x31)return int31api(eax,ecx,edx,esi);
 }
 void int30api(){
-	puts("Int 30 Api Function");
+	puts("Int30 Api");
 }
 int int31api(int eax,int ecx,int edx,int esi){	//basic common i/o
 	int ds=task_now()->ss+8;
@@ -28,5 +28,11 @@ int int31api(int eax,int ecx,int edx,int esi){	//basic common i/o
 	elif(eax==12)write_cache_wait(c,ecx);
 	elif(eax==13)putstr(dsbs+esi);
 	elif(eax==14)puts(dsbs+esi);
+	elif(eax==15)curpos.x=curpos.y=0;
+	elif(eax==16)cls_bg();
+	elif(eax==17){
+		cls_bg();
+		curpos.x=curpos.y=0;
+	}
 	return 0;
 }

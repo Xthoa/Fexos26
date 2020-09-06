@@ -62,10 +62,10 @@ int mem_left(){
 	return total;
 }
 void vramcpy(Position dst,Position src,int len){
-	memcpy((void*)(VRAM+dst.x*160+dst.y*2),(void*)(VRAM+src.x*160+src.y*2),len*2);
+	memcpy((void*)(VRAM+dst.x*2+dst.y*2),(void*)(VRAM+src.x*2+src.y*2),len*2);
 }
 void vrammove(Position dst,Position src,int len){
-	memmove((void*)(VRAM+dst.x*160+dst.y*2),(void*)(VRAM+src.x*160+src.y*2),len*2);
+	memmove((void*)(VRAM+dst.x*2+dst.y*2),(void*)(VRAM+src.x*2+src.y*2),len*2);
 }
 void *memcpy(void* dst,void* src,int size){
 	char *d=dst,*s=src;

@@ -97,6 +97,7 @@ typedef struct _FIFO{
 	int len;
 	volatile int read,write;
 	int* buf;
+	struct _TCB * task;
 } Buffer,Cache,Fifo;
 typedef struct _REGS{
 	int ds,es,fs,gs;
@@ -174,10 +175,15 @@ typedef struct _PROG{
 	int sesp,sss;
 	int acs,key;
 } App,Program;
+typedef struct __CURPOS{
+	int x;
+	int y;
+	int lim;
+} Curpos;
 
 extern Cache* kbdcac;
 extern Allocator* allocr;
-extern Position curpos;
+extern Curpos curpos;
 extern Cache* stdin;
 extern Bool kbd_flag;
 extern Dword clock;
@@ -196,11 +202,12 @@ void int0e_asm();
 void int0d_asm();
 void cpuid(int eax,int* buf);
 void int20_asm();
-void restart();
+void restart(Htask a,Htask b);
 void delay(int time);
 void write_cr3(int cr3);
 int strcmp(char* dst,char* src);
 void app_startup_asm(App* a);
+void destart(Htask t);
 
 void entry();
 void cls_bg();
@@ -211,7 +218,7 @@ void set_gatedesc(int no,int off,int sel,int param,int attr);
 void int21(int code);
 void int3(); 
 void int0e(int cr2,int code,int eip);
-void int0d(int code);
+void int0d(int code,int cs,int eip);
 void int20();
 void enable_pic(int irq);
 void init_pit();

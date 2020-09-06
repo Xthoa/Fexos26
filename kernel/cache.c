@@ -22,6 +22,7 @@ void write_cache(Cache* c,int data){
 	c->buf[c->write]=data;
 	c->write++;
 	if(c->write==c->len)c->write=0;
+	if(c->task!=NULL)task_ready(c->task);
 }
 int read_cache_wait(Cache* c){
 	while(fifo_size(c)==0);

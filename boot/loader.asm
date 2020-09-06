@@ -78,9 +78,11 @@ out 0xa1,al
 ;15.allow int
 sti
 ;16.set c stack
+mov [07b00h],esp
 mov esp,07b00h
-;17.jump to c
-jmp 0xb400
+;17.call c main proc
+call 0xb400
+jmp $
 
 dispintmsg:
 	push ecx

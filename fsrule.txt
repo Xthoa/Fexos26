@@ -1,1 +1,1 @@
-rename kernel\test.fex file 0
+rename app\shell.fex shell.fex 0

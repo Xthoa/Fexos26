@@ -5,3 +5,6 @@ boot.bin: boot.asm rmio.inc makefile
 
 loader.bin: loader.asm desc.inc pmio.inc makefile
 	nasm loader.asm -o loader.bin -f bin
+
+clean:
+	echo cleaned

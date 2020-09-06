@@ -1,32 +1,45 @@
 //io.c
 #include "kernel.h"
-Position curpos;
+Curpos curpos;
 void putch(char c){
-	if(c=='\n')curpos.x++,curpos.y=0;
+	if(c=='\n' || c==KEY_PAD_ENTER){
+		curpos.x=((curpos.x+80)/80)*80;
+		curpos.y=curpos.lim=0;
+	}
 	elif(c=='\r')curpos.y=0;
 	elif(c=='\b'){
 		if(curpos.y==0)return;
-		Position pos={curpos.x,curpos.y-1};
-		vramcpy(pos,curpos,80-curpos.y);
+		Position to={curpos.x,curpos.y-1};
+		Position from={curpos.x,curpos.y};
+		vramcpy(to,from,curpos.lim-curpos.y);
+		putchar(curpos.x,curpos.lim-1,32,BLACK);
 		curpos.y--;
+		curpos.lim--;
 	}
 	elif(c==0x7f){
-		Position pos={curpos.x,curpos.y+1};
-		vramcpy(curpos,pos,79-curpos.y);
+		if(curpos.y==curpos.lim)return;
+		Position from={curpos.x,curpos.y+1};
+		Position to={curpos.x,curpos.y};
+		vramcpy(to,from,curpos.lim-curpos.y-1);
+		curpos.y--;
+		curpos.lim--;
 	}
 	elif(c=='\t'){
 		int len=(curpos.y|3)+1-curpos.y;
 		for(int i=0;i<len;i++)putch(' ');
 	}
 	else{
-		if((kbd_flag&64)){
-			Position pos={curpos.x,curpos.y+1};
-			vrammove(pos,curpos,79-curpos.y);
-		}
+		Position to={curpos.x,curpos.y+1};
+		Position from={curpos.x,curpos.y};
+		vrammove(to,from,curpos.lim-curpos.y);
 		putchar(curpos.x,curpos.y,c,GREY);
 		curpos.y++;
+		curpos.lim++;
 	}
-	if(curpos.y>=80)curpos.x++,curpos.y=0;
+//	dispdec(0,65,4,curpos.x,WHITE);
+//	dispdec(0,70,4,curpos.y,WHITE);
+//	dispdec(0,75,4,curpos.lim,WHITE);
+//	delay(4);
 }
 int putstr(const char* str){
 	while(*str){
@@ -67,8 +80,8 @@ int printf(const char* format,...){
 	return True;
 }
 void putchar(int row,int col,char ch,char color){
-	*(char*)(VRAM+row*160+col*2+1)=color;
-	*(char*)(VRAM+row*160+col*2)=ch;
+	*(char*)(VRAM+row*2+col*2+1)=color;
+	*(char*)(VRAM+row*2+col*2)=ch;
 }
 void dispstr(int x,int y,const char* str,char col){
 	while(*str){
@@ -97,6 +110,7 @@ void dispint(int x,int y,int dig,int val,char col){
 void putint(int val,int dig){
 	dispint(curpos.x,curpos.y,dig,val,GREY);
 	curpos.y+=dig;
+	curpos.lim+=dig;
 }
 void dispdec(int x,int y,int dig,int val,char col){
 	y+=dig-1;
@@ -108,4 +122,5 @@ void dispdec(int x,int y,int dig,int val,char col){
 void putdec(int val,int dig){
 	dispdec(curpos.x,curpos.y,dig,val,GREY);
 	curpos.y+=dig;
+	curpos.lim+=dig;
 }

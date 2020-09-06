@@ -1,6 +1,7 @@
 //file.c
 #include "kernel.h"
 FS fs;
+FS fs;
 void init_fs(){
 	char* base=(char*)0xe000;	//sector 25
 	fs.filecnt=*(int*)base;

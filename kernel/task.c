@@ -4,6 +4,8 @@ TaskTab tasktab;
 void init_mt(){
 	tasktab.root=malloc(sizeof(Task)*MAX_TASKS);
 	memset(tasktab.root,0,sizeof(Task)*MAX_TASKS);
+	tasktab.ready=malloc(sizeof(Htask)*MAX_TASKS);
+	memset(tasktab.ready,0,sizeof(Htask)*MAX_TASKS);
 	tasktab.size=0;
 	tasktab.now=0;
 }
@@ -48,6 +50,7 @@ void task_init_ns(Htask task,int eip,int cs,int ds,int ss,int esp,int eflags){	/
 	task->ss=ss;
 }
 void task_ready(Htask task){
+	if(task->flag==2)return;
 	task->flag=2;
 	tasktab.ready[tasktab.size]=task;
 	tasktab.size++;
@@ -69,6 +72,64 @@ void schedule(){
 		__asm__("sti");
 		Htask n=task_now();
 		//printf("T7 %x %x %x\n",n,tasktab.now,n->regs);
+		//putstr("T7 ; ");
 		restart(t,n);
+	}
+}
+void exec(char* name){
+	Htask t=create_task(name);
+	int stack=malloc_page(4),esp=stack+4*PAGE_SIZE-8;
+	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
+	*(char**)(esp+4)=name;
+	task_ready(t);
+}
+void task_sleep(Htask task){
+	if(task->flag!=2)return;
+	__asm__("cli");
+	task->flag=1;
+	for(int i=0;i<tasktab.size;i++){
+		if(tasktab.ready[i]==task){
+			tasktab.size--;
+			int j=i;
+			while(tasktab.ready[j]!=0)
+				tasktab.ready[j]=tasktab.ready[++j];
+			if(tasktab.now>i)
+				tasktab.now--;
+			elif(tasktab.now==i)
+				schedule();
+		}
+	}
+}
+void task_delete(Htask task,Cache* c){
+	c->task=NULL;
+	if(task->flag!=2)return;
+	__asm__("cli");
+	task->flag=0;
+	for(int i=0;i<tasktab.size;i++){
+		//printf("T24 %x %x %x\n",i,tasktab.size,tasktab.ready[i]);
+		if(tasktab.ready[i]==task){
+			tasktab.size--;
+			int j=i;
+			//printf("T25 %x %x %x\n",task,j,tasktab.now);
+			while(tasktab.ready[j]!=0){
+				//printf("T26 %x %x %x\n",j,tasktab.ready[j],tasktab.ready[j+1]);
+				tasktab.ready[j]=tasktab.ready[++j];
+			}
+			if(tasktab.now>i){
+				tasktab.now--;
+				//printf("T27 %x %x\n",tasktab.now,i);
+			}
+			elif(tasktab.now==i){
+				//printf("T28 %x %x\n",tasktab.now,i);
+				if(tasktab.size>1){
+					if(tasktab.now==tasktab.size)tasktab.now=0;
+					__asm__("sti");
+					Htask n=task_now();
+					//printf("T37 %x %x %x\n",n,tasktab.now,n->regs);
+					//putstr("T37 ; ");
+					destart(n);
+				}
+			}
+		}
 	}
 }

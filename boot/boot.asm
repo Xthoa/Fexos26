@@ -115,8 +115,15 @@ errs:
 	db "Press any key to stop...",0
 gdt:
 	Descriptor 0,0,0
-	Descriptor 0,0xFFFFF,SEG_DATA
-	Descriptor 0,0xFFFFF,SEG_CODE
+	;null
+	Descriptor 0,0xFFFFF,SEG_DATA|SEG_PG4K
+	;data
+	Descriptor 0,0xFFFFF,SEG_CODE|SEG_PG4K
+	;code32
+	Descriptor 0,0xffff,SEG_P|SEG_SEG|SEG_RW|SEG_EX
+	;code16
+	Descriptor 0,0xffff,SEG_DATA
+	;normal
 gdtr:
 	dw 8*0x10-1
 	dd GDTR

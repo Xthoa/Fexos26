@@ -21,11 +21,13 @@ _int30_asm:
 	iretd
 _int31_asm:
 	push ds
+	push es
 	pushad
 	sub esp,0x20
 	push eax
 	mov ax,8
 	mov ds,ax
+	mov es,ax
 	pop eax
 	pushad
 	push 0x31
@@ -34,5 +36,6 @@ _int31_asm:
 	add esp,0x20
 	mov [esp+28],eax
 	popad
+	pop es
 	pop ds
 	iretd

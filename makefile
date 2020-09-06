@@ -1,4 +1,6 @@
-src = boot\boot.bin boot\loader.bin kernel\start.bin kernel\test.bin
+boot = boot\boot.bin boot\loader.bin
+kernel = kernel\start.bin
+app = app\shell.fex
 need = rule.txt fsrule.txt
 
 default:
@@ -19,8 +21,16 @@ qemu:
 img:
 	make -C boot
 	make -C kernel
+	make -C api
+	make -C app
 	make fexos.img
 
-fexos.img: $(src) $(need) makefile
+fexos.img: $(boot) $(kernel) $(app) $(need) makefile
 	fexfs2 fsrule.txt fs.bin
 	imager rule.txt fexos.img
+
+clean:
+	make -C boot clean
+	make -C kernel clean
+	make -C api clean
+	make -C app clean

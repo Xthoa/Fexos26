@@ -2,7 +2,7 @@
 global _int21_asm,_hlt,_out8,_int20_asm,_restart
 global _int3_asm,_int0e_asm,_int0d_asm,_cpuid
 global _memset,_read_cr3,_write_cr3,_read_eflags
-global _write_eflags,_delay,_farcall
+global _write_eflags,_delay,_farcall,_destart
 global _app_startup_asm
 extern _int21,_int3,_int0e,_int0d,_int20
 irqback:
@@ -37,7 +37,7 @@ _int0e_asm:
 	pushad
 	mov eax,[esp+36]
 	push eax
-	mov eax,[esp+32]
+	mov eax,[esp+36]
 	push eax
 	mov eax,cr2
 	push eax
@@ -51,7 +51,10 @@ _int0e_asm:
 	iretd
 _int0d_asm:
 	pushad
-	call _int0e
+	push dword [esp+40]
+	push dword [esp+40]
+	push dword [esp+40]
+	call _int0d
 	popad
 	add esp,4
 	.fin:
@@ -163,6 +166,9 @@ _app_startup_asm:
 	mov ax,[ebx+12]
 	add ax,8
 	mov ds,ax
+	mov es,ax
+	mov fs,ax
+	mov gs,ax
 	push ecx
 	push edx
 	push ebx
@@ -173,7 +179,24 @@ _app_startup_asm:
 	add esp,8
 	mov eax,8
 	mov ds,ax
+	mov es,ax
+	mov fs,ax
+	mov gs,ax
 	mov esp,[ebx+16]
 	mov ss,[ebx+20]
 	popad
+	ret
+_destart:
+	mov ax,8
+	mov ds,ax
+	mov ebx,[esp+4]
+	mov esp,[ebx]
+	mov ss,[ebx+4]
+	pop ds
+	pop es
+	pop fs
+	pop gs
+	popad
+	iretd
+	.ret:
 	ret
