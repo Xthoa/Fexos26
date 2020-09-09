@@ -23,3 +23,4 @@ void cls();
 void clcur();
 void cls_cur();
 int printf(const char* format,...);
+void dispmem();

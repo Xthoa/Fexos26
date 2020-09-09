@@ -76,13 +76,6 @@ void schedule(){
 		restart(t,n);
 	}
 }
-void exec(char* name){
-	Htask t=create_task(name);
-	int stack=malloc_page(4),esp=stack+4*PAGE_SIZE-8;
-	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
-	*(char**)(esp+4)=name;
-	task_ready(t);
-}
 void task_sleep(Htask task){
 	if(task->flag!=2)return;
 	__asm__("cli");
@@ -132,4 +125,13 @@ void task_delete(Htask task,Cache* c){
 			}
 		}
 	}
+}
+void exec(char* name){
+	Htask t=create_task(name);
+	int stack=malloc_page(4);
+	int stack_lin=push_page(stack,4);
+	int esp=stack_lin+4*PAGE_SIZE-8;
+	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
+	*(char**)(esp+4)=name;
+	task_ready(t);
 }

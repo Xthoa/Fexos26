@@ -212,17 +212,19 @@ void destart(Htask t);
 void entry();
 void cls_bg();
 void cpuids();
-void task_b();
+void manager();
 
 void set_gatedesc(int no,int off,int sel,int param,int attr);
 void int21(int code);
 void int3(); 
-void int0e(int cr2,int code,int eip);
-void int0d(int code,int cs,int eip);
+void int0e(int cr2,int code,int eip,int cs);
+void int0d(int code,int eip,int cs);
 void int20();
 void enable_pic(int irq);
 void init_pit();
-char* push_page(char* raw,int start,int pages);
+char* push_page(char* raw,int pages);
+char* pop_page(char* lin,int pages);
+char* global_page(char* raw,int start,int pages);
 char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages);
 void set_segmdesc(int no,int base,int limit,int attr);
 void app_startup(char* name);
@@ -271,7 +273,7 @@ void schedule();
 
 int apideliv(int ino,int edi,int esi,int ebp,int esp,int ebx,int edx,int ecx,int eax);
 void int30api();
-int int31api(int eax,int ecx,int edx,int esi);
+int int31api(int eax,int ebx,int ecx,int edx,int esi);
 void int30_asm();
 void int31_asm();
 

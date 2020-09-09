@@ -3,7 +3,7 @@ objs = start.o memory.o task.o io.o cache.o intapi.o file.o desc.o fasm.obj inta
 default: start.bin
 
 %.o: %.c makefile kernel.h
-	gcc -c -m32 -O2 -std=c11 $*.c -o $*.o
+	gcc -c -m32 -O1 -std=c11 $*.c -o $*.o
 
 %.obj: %.asm makefile
 	nasm $*.asm -o $*.obj -f elf32

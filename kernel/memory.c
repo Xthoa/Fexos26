@@ -83,7 +83,7 @@ void *memmove(void* dst,void* src,int size){
 }
 void dispmem(){
 	puts("Allocator Info:");
-	printf("%x %x\n",allocr->root,allocr->size);
+	printf("%x %x %x\n",allocr,allocr->root,allocr->size);
 	for(int i=0;i<allocr->size;i++){
 		Freeinfo *f=allocr->root+i;
 		printf("%x %x\n",f->addr,f->size);

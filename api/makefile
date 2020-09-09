@@ -1,6 +1,6 @@
 default: fexos.lib string.lib std.lib
 
-src = putchar.o puts.o putint.o getch.o cls.o startup.o
+src = putchar.o puts.o putint.o getch.o cls.o startup.o dispmem.o
 
 %.o: %.asm makefile
 	nasm $*.asm -o $*.o -f win

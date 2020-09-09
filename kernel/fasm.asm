@@ -1,9 +1,7 @@
 ;asm funcs
 global _int21_asm,_hlt,_out8,_int20_asm,_restart
-global _int3_asm,_int0e_asm,_int0d_asm,_cpuid
-global _memset,_read_cr3,_write_cr3,_read_eflags
-global _write_eflags,_delay,_farcall,_destart
-global _app_startup_asm
+global _int0e_asm,_int0d_asm,_cpuid,_memset,_read_cr3
+global _read_eflags,_delay,_farcall,_destart,_app_startup_asm
 extern _int21,_int3,_int0e,_int0d,_int20
 irqback:
 	mov al,0x20
@@ -17,12 +15,6 @@ _int21_asm:
 	call _int21
 	call irqback
 	add esp,4
-	popad
-	iretd
-_int3_asm:
-	sti			;so that kbd data will come
-	pushad
-	call _int3
 	popad
 	iretd
 _hlt:
@@ -127,27 +119,15 @@ _memset:
 _read_cr3:
 	mov eax,cr3
 	ret
-_write_cr3:
-	mov eax,[esp+4]
-	mov cr3,eax
-	ret
 _read_eflags:
 	pushfd
 	pop eax
 	ret
-_write_eflags:
-	push dword [esp+4]
-	popfd
-	ret
 _delay:
 	push ecx
 	mov ecx,[esp+8]
+	shl ecx,19
 	.loop:
-	push ecx
-	mov ecx,800000
-	.loop2:
-	loop .loop2
-	pop ecx
 	loop .loop
 	pop ecx
 	ret

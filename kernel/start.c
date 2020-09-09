@@ -1,5 +1,4 @@
 #include "kernel.h"
-Cache* maincac;
 Bool kbd_flag;	//0 !insert ctrl alt caps !num shift e0
 __attribute__((section(".entry")))
 void entry(){
@@ -40,16 +39,10 @@ void entry(){
 	int buf2[64];
 	fifo_init(&input,buf2,64);
 	stdin=&input;
-	Cache mc;
-	int buf3[64];
-	fifo_init(&mc,buf3,64);
-	maincac=&mc;
 	//4.init memory
 	init_allocator();
 	disable_page(0,0x100);		//total 1M [0x100 Pages] for kernel
-	dispmem();
 	//5.set idt
-	set_gatedesc(0x03,(int)int3_asm,16,0,GATE_INT);
 	set_gatedesc(0x0d,(int)int0d_asm,16,0,GATE_INT);
 	set_gatedesc(0x0e,(int)int0e_asm,16,0,GATE_INT);
 	set_gatedesc(0x20,(int)int20_asm,16,0,GATE_INT);
@@ -61,12 +54,12 @@ void entry(){
 	segcnt=5;
 	init_mt();
 	Htask sys=create_task_0();
-	Htask app=create_task("Task B");
-	task_init(app,task_b);
+	Htask app=create_task("Manager");
+	task_init(app,manager);
 	task_ready(sys);
 	init_pit();
 	enable_pic(0xff78);
-	puts("Welcome to Fexos 1.3");
+	puts("Welcome to Fexos 1.5");
 	task_ready(app);
 	while(1){
 		if(fifo_size(&cac)>0){
@@ -143,12 +136,8 @@ void cpuids(){
 	memcpy(bootinfo->cpuid.name,buf,48);
 	return;
 }
-void task_b(){
-	Htask t=create_task("shell.fex");
-	int stack=malloc_page(2),esp=stack+2*PAGE_SIZE-8;
-	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
-	*(char**)(esp+4)="shell.fex";
-	task_ready(t);
+void manager(){
+	exec("shell.fex");
 	while(1);
 }
 void app_startup(char* name){
@@ -159,23 +148,23 @@ void app_startup(char* name){
 	self->c=&c;
 	File* f=fopen(name);
 	int* p=filepos(f);
-	int data=*(p++);
+	int ss=*(p++);
 	int bss=*(p++);
 	int entry=*(p++);
 	App a;
-	int stack=malloc_page(data+bss);
-	int stack_lin=push_page(stack,2,data+bss);
+	int stack=malloc_page(ss+bss);
+	int stack_lin=push_page(stack,ss+bss);
 	memcpy(stack_lin,p,f->len-12);
-	//printf("T9 %x %x\n",stack,stack+(data+bss)*PAGE_SIZE-1);
+	//printf("T9 %x %x\n",stack,stack+(ss+bss)*PAGE_SIZE-1);
 	int sc=segcnt;
 	segcnt+=3;
 	set_segmdesc(sc,stack_lin,f->len-13,SEG_CODE);
-	set_segmdesc(sc+1,stack_lin,(data+bss)*PAGE_SIZE-1,SEG_DATA);
-	set_segmdesc(sc+2,stack_lin,(data+bss)*PAGE_SIZE-1,SEG_DATA);
+	set_segmdesc(sc+1,stack_lin,(ss+bss)*PAGE_SIZE-1,SEG_DATA);
+	set_segmdesc(sc+2,stack_lin,(ss+bss)*PAGE_SIZE-1,SEG_DATA);
 	a.cs=sc*8;
 	a.eip=entry;
 	self->ss=a.ss=(sc+1)*8;
-	a.esp=(data+bss)*PAGE_SIZE-9;	//reserve space of 2 arg
+	a.esp=(ss+bss)*PAGE_SIZE-9;	//reserve space of 2 arg
 	//putch('S');
 	app_startup_asm(&a);
 	//putch('F');

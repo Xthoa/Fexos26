@@ -13,14 +13,16 @@ void int21(int code){
 	write_cache(kbdcac,code);
 }
 void int3(){
-	printf("Press any key to continue...\n");
+	printf("Press to continue.\n");
 	while(fifo_size(kbdcac)==0);
 }
-void int0e(int cr2,int code,int eip){
-	printf("#PF cr2=%x code=%x eip=%x\n",cr2,code,eip);
+void int0e(int cr2,int code,int eip,int cs){
+	printf("#PF cr2%x code%x eip%x cs%x\n",cr2,code,eip,cs);
+	while(1)hlt();
 }
-void int0d(int code,int cs,int eip){
-	printf("#GP code=%x cs=%x eip=%x\n",code,cs,eip);
+void int0d(int code,int eip,int cs){
+	printf("#GP code%x cs%x eip%x\n",code,cs,eip);
+	while(1)hlt();
 }
 Dword clock;
 #define qemu
@@ -42,9 +44,28 @@ void init_pit(){
 	out8(0x40,0xa9);
 	out8(0x40,0x04);
 }
-char* push_page(char* raw,int start,int pages){
+char* global_page(char* raw,int start,int pages){
 	Htask task=task_now();
 	for(int i=start;i<pages+start;i++){
+		task->pte[i]=PTE_4K+raw+i*4096;
+	}
+	return task->tid*0x00400000+start*0x1000;	//pte_n = tid
+}
+char* pop_page(char* lin,int pages){
+	Htask task=task_now();
+	int i;
+	for(i=0;(task->pte[i])&i;i++);
+	for(i--;pages--;i--){
+		task->pte[i]=0;
+	}
+	return task->tid*0x00400000+i*0x1000;	//pte_n = tid
+}
+char* push_page(char* raw,int pages){
+	Htask task=task_now();
+	int i;
+	for(i=0;(task->pte[i])&i;i++);
+	int start=i;
+	for(;pages--;i++){
 		task->pte[i]=PTE_4K+raw+i*4096;
 	}
 	return task->tid*0x00400000+start*0x1000;	//pte_n = tid
