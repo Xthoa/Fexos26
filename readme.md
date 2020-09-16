@@ -1,6 +1,6 @@
-# Fexos (26) 1.4
+# Fexos (26) 1.6 
 Builder: Xthoa  
-Compile Time: 2020-09-07 17:56  
+Compile Time: 2020-09-16 23:06  
 Github: https://github.com/Xthoa/Fexos26
 
 Brief:
@@ -23,11 +23,14 @@ The shell has 5 commands now:
 - info		Display os information
 - ver		Display version info
 - cls		Clear screen
+- echo		Echo string
 - exit		Exit from shell
 
+In update v1.6, input filename to run program is supported.
+shell.fex and test.fex is packed with os.
+
 Compilation dependency:  
-Most of the compilers used is from GCC 4.9.2 32bit tools
-within Devc++  
+Most is from GCC 4.9.2 32bit tools within Devc++  
 - gcc
 - ld
 - ar

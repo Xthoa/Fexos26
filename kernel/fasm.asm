@@ -27,6 +27,8 @@ _out8:
 	ret
 _int0e_asm:
 	pushad
+	mov ax,8
+	mov ds,ax
 	mov eax,[esp+36]
 	push eax
 	mov eax,[esp+36]
@@ -43,6 +45,8 @@ _int0e_asm:
 	iretd
 _int0d_asm:
 	pushad
+	mov ax,8
+	mov ds,ax
 	push dword [esp+40]
 	push dword [esp+40]
 	push dword [esp+40]
@@ -144,7 +148,6 @@ _app_startup_asm:
 	mov edx,[ebx]
 	mov ecx,[ebx+4]
 	mov ax,[ebx+12]
-	add ax,8
 	mov ds,ax
 	mov es,ax
 	mov fs,ax
@@ -165,6 +168,7 @@ _app_startup_asm:
 	mov esp,[ebx+16]
 	mov ss,[ebx+20]
 	popad
+	mov ax,ds
 	ret
 _destart:
 	mov ax,8

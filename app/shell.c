@@ -1,7 +1,7 @@
 #include "fexos.h"
 Bool runcmd(char* cmd){
-	static const char* info="Fexos (26) 1.5 [Xthoa]\n\
-	Compile Time: 2020-09-09 22:19\n\
+	static const char* info="Fexos (26) 1.6 [Xthoa]\n\
+	Compile Time: 2020-09-16 23:06\n\
 	Github: https://github.com/Xthoa/Fexos26\n";
 	static const char* help="Commands:\n\
 	help\t\tDisplay this help msg\n\
@@ -9,10 +9,11 @@ Bool runcmd(char* cmd){
 	ver\t\tDisplay version info\n\
 	cls\t\tClear Screen\n\
 	mem\t\tDisplay Memory Status\n\
+	echo\t\tEcho string\n\
 	exit\t\tExit from shell\n";
 	//puts(cmd);
 	if(strcmp(cmd,"exit")==0)return False;
-	elif(strcmp(cmd,"ver")==0)puts("Fexos 1.5");
+	elif(strcmp(cmd,"ver")==0)puts("Fexos 1.6");
 	elif(strcmp(cmd,"info")==0)puts(info);
 	elif(strcmp(cmd,"help")==0){
 		puts(info);
@@ -20,10 +21,22 @@ Bool runcmd(char* cmd){
 	}
 	elif(strcmp(cmd,"cls")==0)cls_cur();
 	elif(strcmp(cmd,"mem")==0)dispmem();
-	else printf("Error : bad command\n");
+	elif(strncmp(cmd,"echo",4)==0){
+		if(cmd[4]==0)puts("usage: echo <string>");
+		else puts(cmd+5);
+	}
+	else{
+		if(findfile(cmd)==NULL){
+			printf("shell: bad command\n");
+			return True;
+		}
+		int tid=exec(cmd);
+		wait(tid);
+	}
 	return True;
 }
 int start(){
+	puts("Fexos 1.6 Shell");
 	while(1){
 		putchar('>');
 		char cmd[64]={0};

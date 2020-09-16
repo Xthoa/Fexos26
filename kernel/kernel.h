@@ -92,7 +92,7 @@ typedef struct _IDT{
 	Byte param;
 	Byte attr;
 	Word off2;
-}pack Idt,Gate;
+} Idt,Gate;
 typedef struct _FIFO{
 	int len;
 	volatile int read,write;
@@ -103,7 +103,7 @@ typedef struct _REGS{
 	int ds,es,fs,gs;
 	int edi,esi,ebp,esp,ebx,edx,ecx,eax;
 	int eip,cs,eflags;
-}pack REGS;
+} REGS;
 typedef struct _TCB{
 	REGS* regs;
 	int ss;
@@ -112,7 +112,7 @@ typedef struct _TCB{
 	int* pte;
 	char* name;
 	Cache* c;
-}pack TCB,Task,*Htask;
+} TCB,Task,*Htask;
 typedef struct _FREEINFO{
 	int addr,size;
 } Freeinfo;
@@ -124,7 +124,7 @@ typedef struct _ARDS{
 	Qword base;
 	Qword len;
 	Dword type;
-}pack ARDS;
+} ARDS;
 typedef struct _POS{
 	int x;
 	int y;
@@ -158,13 +158,13 @@ typedef struct _BOOTINFO{
 		char name[48];
 	}pack cpuid;	//0x650-0x693
 	int os_usable_pages;	//0x694
-}pack BootInfo;
+} BootInfo;
 typedef struct _FILE{
 	char flag;
 	char name[23];
 	int len;
 	int pos;
-}pack File,FileInfo;
+} File,FileInfo;
 typedef struct _FS{
 	int filecnt;
 	File* start;
@@ -174,12 +174,23 @@ typedef struct _PROG{
 	int esp,ss;
 	int sesp,sss;
 	int acs,key;
-} App,Program;
+} App,Program,Instance;
 typedef struct __CURPOS{
 	int x;
 	int y;
 	int lim;
 } Curpos;
+typedef struct _APPOPT{
+	enum Incac{
+		SELF=1,FATHER,SYS
+	} incac;
+	enum Waits{
+		CONTINUE=1,WAIT,WAIT_SEND,WAIT_SEND_HLT
+	} waits;
+	enum Io{
+		NONE=1,KBDIN,SCRNOUT,ALL
+	} io;
+} AppOption;
 
 extern Cache* kbdcac;
 extern Allocator* allocr;
@@ -227,7 +238,7 @@ char* pop_page(char* lin,int pages);
 char* global_page(char* raw,int start,int pages);
 char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages);
 void set_segmdesc(int no,int base,int limit,int attr);
-void app_startup(char* name);
+void app_startup(char* name,Htask father,AppOption ao);
 
 void putchar(int row,int col,char ch,char color);
 void dispstr(int x,int y,const char* str,char col);

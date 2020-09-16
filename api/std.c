@@ -28,3 +28,15 @@ int printf(const char* format,...){
 	va_end(v);
 	return True;
 }
+void exec_wait(char* name){
+	int tid=exec(name);
+	wait();
+}
+void exec_wait_hlt(char* name){
+	int tid=exec(name);
+	wait_hlt();
+}
+void exec_wait_send(char* name){
+	int tid=exec(name);
+	wait_send(search_task(tid));
+}

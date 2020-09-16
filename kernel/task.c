@@ -26,6 +26,8 @@ Htask create_task(char* name){
 			t->name=name;
 			t->sel=16;
 			int p=malloc_page(1);
+			memset(p,0,4096);
+			//p=push_page(p,1);
 			*(int*)(PDE+i*4)=(int)p+PDE_TAB;
 			//printf("T0 %x %x %x %x\n",t,i,(int)(PDE+i*4),*(int*)(PDE+i*4));
 			t->pte=p;
@@ -126,12 +128,16 @@ void task_delete(Htask task,Cache* c){
 		}
 	}
 }
-void exec(char* name){
+int exec(char* name,int incac,int waits,int io){
 	Htask t=create_task(name);
 	int stack=malloc_page(4);
 	int stack_lin=push_page(stack,4);
-	int esp=stack_lin+4*PAGE_SIZE-8;
+	int esp=stack_lin+4*PAGE_SIZE-24;
 	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
 	*(char**)(esp+4)=name;
+	*(Htask*)(esp+8)=task_now();
+	AppOption ao={incac,waits,io};
+	*(AppOption*)(esp+12)=ao;
 	task_ready(t);
+	return t->tid;
 }

@@ -7,4 +7,4 @@ loader.bin: loader.asm desc.inc pmio.inc makefile
 	nasm loader.asm -o loader.bin -f bin
 
 clean:
-	echo cleaned
+	rm boot.bin loader.bin

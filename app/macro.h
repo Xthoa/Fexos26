@@ -1,8 +1,10 @@
 //macro.h
+#pragma pack(1)
 #define Bool int
 #define True 1
 #define False 0
 #define elif else if
+#define NULL 0
 typedef enum _KBD{
 	KEY_ESC=0x80,
 	KEY_CTRL_L,KEY_CTRL_R,KEY_SHIFT_L,KEY_SHIFT_R,KEY_ALT_L,KEY_ALT_R,
@@ -15,3 +17,12 @@ typedef enum _KBD{
 	KEY_PAD_UP,KEY_PAD_DOWN,KEY_PAD_LEFT,KEY_PAD_RIGHT,
 	KEY_PAD_INS,KEY_PAD_DEL
 } KBD;
+typedef struct _TCB{
+	int regs;
+	int ss;
+	int acs,key;
+	int tid,sel,flag;
+	int* pte;
+	char* name;
+	int c;
+} *Htask;

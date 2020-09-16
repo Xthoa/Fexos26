@@ -59,7 +59,7 @@ void entry(){
 	task_ready(sys);
 	init_pit();
 	enable_pic(0xff78);
-	puts("Welcome to Fexos 1.5");
+	puts("Welcome to Fexos 1.6");
 	task_ready(app);
 	while(1){
 		if(fifo_size(&cac)>0){
@@ -88,29 +88,12 @@ void entry(){
 				elif(key==KEY_CAPS)kbd_flag^=8;
 				elif(key==KEY_ALT_L || key==KEY_ALT_R)kbd_flag|=16;
 				elif(key==KEY_CTRL_L || key==KEY_CTRL_R)kbd_flag|=32;
-				//putstr(find_task(2)->name);
-				write_cache(find_task(2)->c,key);
+				write_cache(app->c,key);
 			}
-		}/*
-		if(fifo_size(stdin)>0){
-			int key=read_cache(stdin);
-			/*if(key<0x80)putch(key);
-			elif(key==KEY_PAD_ENTER)putch('\n');
-			elif(key==KEY_LEFT || key==KEY_PAD_LEFT)curpos.y?curpos.y--:curpos.y;
-			elif(key==KEY_RIGHT || key==KEY_PAD_RIGHT)curpos.y<80?curpos.y++:curpos.y;
-			//elif(key==KEY_UP || key==KEY_PAD_UP)curpos.x?curpos.x--:curpos.x;
-			//elif(key==KEY_DOWN || key==KEY_PAD_DOWN)curpos.x<25?curpos.x++:curpos.x;
-			elif(key==KEY_INS || key==KEY_PAD_INS)kbd_flag^=64;
-			elif(key==KEY_DEL || key==KEY_PAD_DEL)putch(0x7f);*
-			write_cache(find_task(2)->c,key);
-		}*/
-		/*if(fifo_size(maincac)>0){
-			int key=read_cache(maincac);
-			if(key==1)break;
-		}*/
+		}
 		hlt();
 	}
-	puts("Fexos 1.4 Exiting...");
+	puts("Fexos 1.6 Exiting...");
 	enable_pic(0xffff);
 	return;
 }
@@ -137,15 +120,43 @@ void cpuids(){
 	return;
 }
 void manager(){
-	exec("shell.fex");
-	while(1);
-}
-void app_startup(char* name){
 	Cache c;
-	int buf[32];
+	int buf[16];
+	fifo_init(&c,buf,16);
+	task_now()->c=&c;
+	exec("shell.fex",FATHER,WAIT,ALL);
+	while(1){
+		//if(fifo_size(&c)>0)write_cache(search_task(2)->c,read_cache(&c));
+		//hlt();
+	}
+}
+void app_startup(char* name,Htask father,AppOption ao){
 	Htask self=task_now();
-	fifo_init(&c,buf,32);
-	self->c=&c;
+	switch(ao.incac){
+		case SELF:{
+			Cache c;
+			int buf[32];
+			fifo_init(&c,buf,32);
+			self->c=&c;
+			break;
+		}
+		case FATHER:{
+			self->c=father->c;
+			break;
+		}
+		case SYS:
+			error(1);
+	}
+	switch(ao.waits){
+		case WAIT_SEND_HLT:
+		case CONTINUE:
+			error(4);
+	}
+	/*switch(ao.io){
+		case KBDIN:
+		case SCRNOUT:
+			error(3);
+	}*/
 	File* f=fopen(name);
 	int* p=filepos(f);
 	int ss=*(p++);
@@ -155,18 +166,18 @@ void app_startup(char* name){
 	int stack=malloc_page(ss+bss);
 	int stack_lin=push_page(stack,ss+bss);
 	memcpy(stack_lin,p,f->len-12);
-	//printf("T9 %x %x\n",stack,stack+(ss+bss)*PAGE_SIZE-1);
 	int sc=segcnt;
-	segcnt+=3;
+	segcnt+=2;
+	//printf("t2 %x %x %x %x\n",stack,stack_lin,ss,bss); 
 	set_segmdesc(sc,stack_lin,f->len-13,SEG_CODE);
 	set_segmdesc(sc+1,stack_lin,(ss+bss)*PAGE_SIZE-1,SEG_DATA);
-	set_segmdesc(sc+2,stack_lin,(ss+bss)*PAGE_SIZE-1,SEG_DATA);
 	a.cs=sc*8;
 	a.eip=entry;
 	self->ss=a.ss=(sc+1)*8;
 	a.esp=(ss+bss)*PAGE_SIZE-9;	//reserve space of 2 arg
-	//putch('S');
 	app_startup_asm(&a);
-	//putch('F');
-	task_delete(self);
+	write_cache(self->c,280);
+	//printf("%x %x %x %2x %2x\n",father,father->tid,father->c,father->c->read,father->c->write);
+	//task_delete(self);
+	while(1);
 } 

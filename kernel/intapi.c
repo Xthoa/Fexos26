@@ -2,9 +2,10 @@
 #include "kernel.h"
 int apideliv(int ino,int edi,int esi,int ebp,int esp,int ebx,int edx,int ecx,int eax){
 	__asm__("sti");
-	//while(1);
 	if(ino==0x30)int30api();
-	elif(ino==0x31)return int31api(eax,ebx,ecx,edx,esi);
+	elif(ino==0x31){
+		return int31api(eax,ebx,ecx,edx,esi);
+	}
 	//elif(ino==0x32)return int32api(eax);
 }
 void int30api(){
@@ -12,8 +13,9 @@ void int30api(){
 }
 int int31api(int eax,int ebx,int ecx,int edx,int esi){	//basic common i/o
 	Htask task=task_now();
-	int ds=task->ss+8;
+	int ds=((App*)ebx)->ss;
 	Cache* c=task->c;
+	//printf("t4 %x %x %x\n",task,c,ds);
 	Descriptor* d=GDT+(ds>>3);
 	int dsbs=(((unsigned char)d->base3)<<24)+(((unsigned char)d->base2)<<16)+((unsigned short)d->base);
 	if(eax==1)putch(ecx);
@@ -52,35 +54,67 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi){	//basic common i/o
 			if((*(char*)(dsbs+(esi++)))=='\n')break;
 		}
 	}
-	elif(eax=21){
+	elif(eax==21){
 		int total=bootinfo->os_usable_pages;
 		int all=0;
 		for(int i=0;i<allocr->size;i++){
 			Freeinfo *f=allocr->root+i;
-			putdec(i,2);
-			putch(32);
-			putint(f->addr,8);
-			putch(32);
-			putint(f->size,8);
-			putch(10);
+			printf("%2d %x %x\n",i,f->addr,f->size);
 			all+=f->size;
 		}
-		putstr("Total ");
-		putdec(total/256,8);
-		putstr(" M\nLeft ");
-		putdec(all/256,8);
-		puts(" M");
+		printf("Total %dM\nLeft  %dM\n",total>>8,all>>8);
 	}
+	elif(eax==22)return malloc_page(edx);
+	elif(eax==23)push_page(edx,ecx);
+	elif(eax==24){
+		//printf("t3 %x %x %x\n",ds,dsbs,esi);
+		return exec(dsbs+esi,FATHER,WAIT,ALL);
+	}
+	elif(eax==25){
+		while(front_cache_wait(c)!=280);
+		pop_cache(c);
+	}
+	elif(eax==26){
+		while(front_cache_wait(c)!=280)hlt();
+		pop_cache(c);
+	}
+	elif(eax==27){
+		int ch;
+		while((ch=read_cache_wait(c))){
+			if(ch==280)break;
+			write_cache_wait((search_task(edx))->c,ch);
+		}
+		pop_cache(c);
+	}
+	elif(eax==28){
+		int ch;
+		while(1){
+			if(fifo_size(c)>0){
+				if((ch=read_cache(c))!=280)
+					write_cache_wait((search_task(edx))->c,ch);
+			}
+			hlt();
+		}
+		pop_cache(c);
+	}
+	elif(eax==29)return (int)find_task(edx);
+	elif(eax==30)return (int)search_task(edx);
+	elif(eax==31)return task_now();
+	elif(eax==32)return fopen(dsbs+esi);
+	elif(eax==33)return filepos(edx);
+	elif(eax==34)write_cache(c,280);
+	elif(eax==35)pop_cache(c);
+	elif(eax==36)return front_cache(c);
+	elif(eax==37)return front_cache_wait(c);
 	return 0;
-}
-/*
+}/*
 int int32api(int eax,int ebx,int edx){
 	//system functions
-	/*int ssi=task_now()->ss,csi=ssi-8,dsi=ssi+8;
+	int ssi=task_now()->ss,csi=ssi-8,dsi=ssi+8;
 	Descriptor* ds=GDT+(dsi>>3);
 	Descriptor* cs=GDT+(csi>>3);
 	Descriptor* ss=GDT+(ssi>>3);
 	int dsbs=(((unsigned char)ds->base3)<<24)+(((unsigned char)ds->base2)<<16)+((unsigned short)ds->base);
 	if(eax==1)return malloc_page(edx);
-	//elif(eax==2)push_page(ebx,)
+	elif(eax==2)exec(dsbs+ebx);
 }*/

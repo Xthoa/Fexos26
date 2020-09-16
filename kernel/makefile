@@ -1,4 +1,5 @@
-objs = start.o memory.o task.o io.o cache.o intapi.o file.o desc.o fasm.obj intapia.obj
+objs = start.o memory.o task.o io.o cache.o intapi.o file.o desc.o \
+		fasm.obj intapia.obj error.o
 
 default: start.bin
 
@@ -15,4 +16,4 @@ start.bin: start.b makefile
 	objcopy -O binary -j .text -j .rdata start.b start.bin
 
 clean:
-	rm *.o *.b *.obj
+	rm *.o *.b *.obj *.bin

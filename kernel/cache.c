@@ -12,15 +12,8 @@ int fifo_size(Cache* c){
 }
 int read_cache(Cache* c){
 	if(c->write==c->read)return 0;
-	/*putint(c->write,2);
-	putint(c->read,2);
-	putch(32);*/
 	int ret=c->buf[c->read];
 	c->read++;
-	/*putint(ret,8);
-	putch(10);
-	delay(4);
-	putch('\r');*/
 	if(c->read==c->len)c->read=0;
 	return ret;
 }
@@ -36,5 +29,19 @@ int read_cache_wait(Cache* c){
 }
 void write_cache_wait(Cache* c,int data){
 	while(fifo_size(c)==c->len-1);
+	putch('9');
 	write_cache(c,data);
+}
+int front_cache(Cache* c){
+	if(c->write==c->read)return 0;
+	int ret=c->buf[c->read];
+	return ret;
+}
+int front_cache_wait(Cache* c){
+	while(fifo_size(c)==0);
+	return front_cache(c);
+}
+void pop_cache(Cache* c){
+	c->read++;
+	if(c->read==c->len)c->read=0;
 }

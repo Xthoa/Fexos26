@@ -71,10 +71,10 @@ int printf(const char* format,...){
 			int dig=c-'0';
 			if(d=='x')putint(va_arg(v,int),dig);
 			elif(d=='d')putdec(va_arg(v,int),dig);
-			else return False;
+			else error(2);
 		}
 		elif(c=='%')putch('%');
-		else return False;
+		else error(2);
 	}
 	va_end(v);
 	return True;

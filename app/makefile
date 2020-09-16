@@ -1,6 +1,6 @@
-all = shell.fex
+default : shell.fex test.fex
 
 include appmake.txt
 
 clean:
-	rm *.o *.b
+	rm *.o *.b *.bin *.fex

@@ -20,15 +20,22 @@ _int30_asm:
 	pop ds
 	iretd
 _int31_asm:
+	push ebx
+	mov ebx,[0]
 	push ds
 	push es
-	pushad
-	sub esp,0x20
 	push eax
 	mov ax,8
 	mov ds,ax
 	mov es,ax
 	pop eax
+	mov [ebx+8],esp
+	mov [ebx+12],ss
+	mov esp,[ebx+16]
+	mov ss,[ebx+20]
+	push ebx
+	pushad
+	sub esp,0x20
 	pushad
 	push 0x31
 	call _apideliv
@@ -36,6 +43,12 @@ _int31_asm:
 	add esp,0x20
 	mov [esp+28],eax
 	popad
+	pop ebx
+	mov [ebx+16],esp
+	mov [ebx+20],ss
+	mov esp,[ebx+8]
+	mov ss,[ebx+12]
 	pop es
 	pop ds
+	pop ebx
 	iretd
