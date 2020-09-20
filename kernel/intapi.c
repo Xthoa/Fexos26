@@ -4,14 +4,14 @@ int apideliv(int ino,int edi,int esi,int ebp,int esp,int ebx,int edx,int ecx,int
 	__asm__("sti");
 	if(ino==0x30)int30api();
 	elif(ino==0x31){
-		return int31api(eax,ebx,ecx,edx,esi);
+		return int31api(eax,ebx,ecx,edx,esi,edi);
 	}
 	//elif(ino==0x32)return int32api(eax);
 }
 void int30api(){
 	puts("Int30");
 }
-int int31api(int eax,int ebx,int ecx,int edx,int esi){	//basic common i/o
+int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/o
 	Htask task=task_now();
 	int ds=((App*)ebx)->ss;
 	Cache* c=task->c;
@@ -67,8 +67,10 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi){	//basic common i/o
 	elif(eax==22)return malloc_page(edx);
 	elif(eax==23)push_page(edx,ecx);
 	elif(eax==24){
-		//printf("t3 %x %x %x\n",ds,dsbs,esi);
-		return exec(dsbs+esi,FATHER,WAIT,ALL);
+		//printf("t3 %x %x %x %x\n",ds,dsbs,ecx,edx);
+		//puts(dsbs+ecx);
+		//puts(dsbs+edx);
+		return exec(dsbs+ecx,dsbs+edx,FATHER,WAIT,ALL);
 	}
 	elif(eax==25){
 		while(front_cache_wait(c)!=280);
@@ -106,6 +108,9 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi){	//basic common i/o
 	elif(eax==35)pop_cache(c);
 	elif(eax==36)return front_cache(c);
 	elif(eax==37)return front_cache_wait(c);
+	elif(eax==38)return push_page(malloc_page(edx),edx);
+	elif(eax==39)return alloc_page(&gdtaloc,edx);
+	elif(eax==40)set_segmdesc(ecx,edx,esi,edi);
 	return 0;
 }/*
 int int32api(int eax,int ebx,int edx){

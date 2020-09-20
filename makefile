@@ -1,6 +1,6 @@
 boot = boot\boot.bin boot\loader.bin
 kernel = kernel\start.bin
-app = app\shell.fex
+app = app\shell.fex app\test.fex
 need = rule.txt fsrule.txt
 
 default:
@@ -8,11 +8,11 @@ default:
 
 debug: 
 	make img
-	bochsdbg -log vmlog.txt -f bochsrc.txt
+	bochsdbg -f bochsrc.bxrc
 
 run: 
 	make img
-	bochs -log vmlog.txt -f bochsrc.txt
+	bochs -f bochsrc.bxrc
 
 qemu:
 	make img

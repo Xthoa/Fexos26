@@ -18,24 +18,12 @@ void int3(){
 }
 void int0e(int cr2,int code,int eip,int cs){
 	putstr("#PF ");
-	putint(cr2,8);
-	putch(32);
-	putint(code,8);
-	putch(32);
-	putint(eip,8);
-	putch(32);
-	putint(cs,8);
-	putch(32);
+	printf("code=%x cr2=%x pc=%x_%x\n",code,cr2,cs,eip);
 	while(1)hlt();
 }
 void int0d(int code,int eip,int cs){
 	putstr("#GP ");
-	putint(code,8);
-	putch(32);
-	putint(eip,8);
-	putch(32);
-	putint(cs,8);
-	putch(32);
+	printf("code=%x pc=%x_%x\n",code,cs,eip);
 	while(1)hlt();
 }
 Dword clock;
@@ -80,7 +68,7 @@ char* push_page(char* raw,int pages){
 	for(i=0;(task->pte)[i]!=0;i++);
 	int start=i;
 	for(;pages--;i++){
-		task->pte[i]=PTE_4K+raw+i*4096;
+		task->pte[i]=PTE_4K+raw+(i-start)*4096;
 	}
 	return task->tid*0x00400000+start*0x1000;	//pte_n = tid
 }

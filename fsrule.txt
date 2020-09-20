@@ -1,2 +1,5 @@
 rename app\shell.fex shell.fex 0
 rename app\test.fex test.fex 0
+rename app\echo.fex echo.fex 0
+rename app\cls.fex cls.fex 0
+rename app\mem.fex mem.fex 0

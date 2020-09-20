@@ -69,12 +69,12 @@ int main(int argc,char** argv){
 		}
 	}
 	fin.close();
-	int len=files.size()*(sizeof(File)-8);
+	int len=files.size()*(sizeof(File)-4);
 	int tmp;
 	cout<<hex;
 	fout.write((char*)&fcm,32);
 	for(auto f:files){
-		cout<<f.name<<endl;
+		printf("%s %4x\n",f.name,len);
 		f.fptr=len=(len+0xf)&(-16);
 		len+=f.len;
 		fout.write((char*)&f,32);

@@ -3,7 +3,7 @@
 bits 16
 %include "desc.inc"
 org 07c00h
-Sectors equ 36
+Cylinders equ 3
 ;1.print boot message
 mov si,msg
 call puts
@@ -11,32 +11,35 @@ cli
 ;2.read floppy to 0xb000 from sector[1]
 mov ax,0x0b00
 mov es,ax
-mov word [0x504],0
-xor bx,bx
-xor dx,dx	;head 0
-mov cx,2	;sector 2 ; cylinder 0
-read:
-mov ah,2	;function
-mov al,1	;sectors count
-xor dl,dl
-add word [0x504],1
+mov ax,0x7b0
+mov ss,ax
+mov sp,0x100
+;mov word [0x504],0
+		MOV		CH,0			; シリンダ0
+		MOV		DH,0			; ヘッド0
+		MOV		CL,2	
+readloop:
+		MOV		AH,0x02			; AH=0x02 : ディスク読み込み
+		MOV		AL,1			; 1セクタ
+		MOV		BX,0
+		MOV		DL,0x00	
+;add word [0x504],1
 int 13h
 jc err
-cmp word [0x504],Sectors
-jz next
-mov ax,es
-add ax,0x20
-mov es,ax
-inc cl
-cmp cl,18
-jbe read
-mov cl,1
-add dh,1
-cmp dh,2
-jb read
-mov dh,1
-add ch,1
-jmp read
+		MOV		AX,ES			; アドレスを0x200進める
+		ADD		AX,0x0020
+		MOV		ES,AX			; ADD ES,0x020 という命令がないのでこうしている
+		ADD		CL,1			; CLに1を足す
+		CMP		CL,18			; CLと18を比較
+		JBE		readloop		; CL <= 18 だったらreadloopへ
+		MOV		CL,1
+		ADD		DH,1
+		CMP		DH,2
+		JB		readloop		; DH < 2 だったらreadloopへ
+		MOV		DH,0
+		ADD		CH,1
+		CMP		CH,Cylinders
+		JB		readloop
 next:
 ;3.set segreg & stack
 mov ax,cs
@@ -44,9 +47,6 @@ mov ds,ax
 mov es,ax
 mov fs,ax
 mov gs,ax
-mov ax,0x7b0
-mov ss,ax
-mov sp,0x100
 ;4.move gdt to 0xa000
 mov cx,0x18
 mov si,gdt
@@ -131,5 +131,5 @@ gdtr:
 %include "rmio.inc"
 
 file_end:
-times 510-($-$$) db 0
+times 510-($-$$) nop
 dw 0xaa55

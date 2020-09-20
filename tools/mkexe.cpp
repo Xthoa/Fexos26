@@ -35,6 +35,8 @@ int main(int argc,char** argv){
 	}
 	ifstream fin(inf);
 	ofstream fout(outf);
+	char magic[4]={0,'f','e','x'};
+	fout.write(magic,4);
 	fout.write((char*)&data,4);
 	fout.write((char*)&bss,4);
 	fout.write((char*)&entry,4);

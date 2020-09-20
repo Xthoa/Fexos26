@@ -19,9 +19,13 @@ _int30_asm:
 	pop es
 	pop ds
 	iretd
+extern _delay
 _int31_asm:
+	;push 16
+	;call _delay
+	;add esp,4
 	push ebx
-	mov ebx,[0]
+	mov ebx,[8]
 	push ds
 	push es
 	push eax

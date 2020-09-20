@@ -1,5 +1,7 @@
 #include "kernel.h"
 Bool kbd_flag;	//0 !insert ctrl alt caps !num shift e0
+Allocator gdtaloc;
+_Gdtr gdtr;
 __attribute__((section(".entry")))
 void entry(){
 	static const char keytabs0[0x59]={
@@ -49,6 +51,15 @@ void entry(){
 	set_gatedesc(0x21,(int)int21_asm,16,0,GATE_INT);
 	set_gatedesc(0x30,(int)int30_asm,16,0,GATE_INT);
 	set_gatedesc(0x31,(int)int31_asm,16,0,GATE_INT);
+	gdtr.base=0xa000;
+	gdtr.len=1023;
+	__asm__("lgdt %0":"=g"(gdtr));
+	gdtaloc.root=malloc_page(2);
+	gdtaloc.size=1;
+	gdtaloc.max=128;
+	Freeinfo* f=gdtaloc.root;
+	f->addr=5;
+	f->size=123;
 	cpuids();
 	init_fs();
 	segcnt=5;
@@ -124,14 +135,24 @@ void manager(){
 	int buf[16];
 	fifo_init(&c,buf,16);
 	task_now()->c=&c;
-	exec("shell.fex",FATHER,WAIT,ALL);
+	exec("shell.fex",NULL,FATHER,WAIT,ALL);
 	while(1){
 		//if(fifo_size(&c)>0)write_cache(search_task(2)->c,read_cache(&c));
 		//hlt();
 	}
 }
-void app_startup(char* name,Htask father,AppOption ao){
+void app_startup(char* name,char* args,Htask father,AppOption ao){
 	Htask self=task_now();
+	File* f=fopen(name);
+	int* p=filepos(f);
+	//printf("f6 %x %x %x %x %x %x\n",f,p,name,args,father,ao.incac);
+	int magic=*(p++);
+	if(magic!=0x78656600){
+		puts("File not executable (0x0000 & 0x0005)");
+		write_cache(self->c,280);
+		task_delete(self);
+		return;
+	}
 	switch(ao.incac){
 		case SELF:{
 			Cache c;
@@ -157,27 +178,38 @@ void app_startup(char* name,Htask father,AppOption ao){
 		case SCRNOUT:
 			error(3);
 	}*/
-	File* f=fopen(name);
-	int* p=filepos(f);
 	int ss=*(p++);
 	int bss=*(p++);
 	int entry=*(p++);
 	App a;
 	int stack=malloc_page(ss+bss);
-	int stack_lin=push_page(stack,ss+bss);
-	memcpy(stack_lin,p,f->len-12);
-	int sc=segcnt;
-	segcnt+=2;
-	//printf("t2 %x %x %x %x\n",stack,stack_lin,ss,bss); 
+	//delay(40);
+	int *stack_lin=push_page(stack,ss+bss);
+	//printf("%x %x %x\n",stack,stack_lin,ss+bss);
+	//delay(40);
+	//printf("%x %x %x\n",ss,bss,entry);
+	memcpy(stack_lin+4,p,f->len-16);
+	stack_lin[0]=0;
+	stack_lin[1]=f->len+4;
+	stack_lin[2]=&a;
+	strcpy((char*)((int)stack_lin+f->len+4),args);
+	//if(args)puts(args);
+	//printf("a %x %x %x %x %x %x\n",stack,stack_lin,&a,f->len+4,args,stack_lin+f->len+4);
+	//puts(stack_lin+f->len+4);
+	int sc=(int)alloc_page(&gdtaloc,2);
+	//printf("g2 %x\n",sc); 
+	//dispalocr(&gdtaloc);
 	set_segmdesc(sc,stack_lin,f->len-13,SEG_CODE);
 	set_segmdesc(sc+1,stack_lin,(ss+bss)*PAGE_SIZE-1,SEG_DATA);
 	a.cs=sc*8;
-	a.eip=entry;
+	a.eip=entry+16;
 	self->ss=a.ss=(sc+1)*8;
 	a.esp=(ss+bss)*PAGE_SIZE-9;	//reserve space of 2 arg
-	app_startup_asm(&a);
-	write_cache(self->c,280);
+	app_startup_asm(&a,2);
 	//printf("%x %x %x %2x %2x\n",father,father->tid,father->c,father->c->read,father->c->write);
-	//task_delete(self);
-	while(1);
+	afree_page(&gdtaloc,sc,2);
+	//dispalocr(&gdtaloc);
+	write_cache(self->c,280);
+	task_delete(self);
+	//while(1);
 } 

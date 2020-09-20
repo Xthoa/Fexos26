@@ -63,7 +63,6 @@
 #define GATE_BASE DESC_P|GATE32
 #define GATE_INT GATE_BASE|GATEA_INT
 
-#define MAX_GLOB_ALOCR_TAB 398
 #define MAX_TASKS 256
 #define PAGE_SIZE 4096
 
@@ -119,6 +118,7 @@ typedef struct _FREEINFO{
 typedef struct _GMM{
 	Freeinfo *root;
 	int size;		//MAX=498
+	int max;
 } GMM,Allocator;
 typedef struct _ARDS{
 	Qword base;
@@ -191,6 +191,10 @@ typedef struct _APPOPT{
 		NONE=1,KBDIN,SCRNOUT,ALL
 	} io;
 } AppOption;
+typedef struct __GDTR{
+	Word len;
+	Dword base;
+} _Gdtr;
 
 extern Cache* kbdcac;
 extern Allocator* allocr;
@@ -202,6 +206,8 @@ extern TaskTab tasktab;
 extern BootInfo* bootinfo;
 extern FS fs;
 extern int segcnt;
+extern Allocator gdtaloc;
+extern _Gdtr gdtr;
 
 void* memset(void* dst,int val,int size);
 void int21_asm();
@@ -217,7 +223,7 @@ void restart(Htask a,Htask b);
 void delay(int time);
 void write_cr3(int cr3);
 int strcmp(char* dst,char* src);
-void app_startup_asm(App* a);
+void app_startup_asm(App* a,int argc);
 void destart(Htask t);
 
 void entry();
@@ -238,7 +244,7 @@ char* pop_page(char* lin,int pages);
 char* global_page(char* raw,int start,int pages);
 char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages);
 void set_segmdesc(int no,int base,int limit,int attr);
-void app_startup(char* name,Htask father,AppOption ao);
+void app_startup(char* name,char* args,Htask father,AppOption ao);
 
 void putchar(int row,int col,char ch,char color);
 void dispstr(int x,int y,const char* str,char col);
@@ -263,6 +269,8 @@ void vrammove(Position dst,Position src,int len);
 void* memcpy(void* dst,void* src,int size);
 void* memmove(void* dst,void* src,int size);
 void disp_mem();
+void* alloc(Allocator* alocr,int size);
+void* alloc_page(Allocator* alocr,int pages);
 
 void fifo_init(Cache* c,int* buf,int len);
 int fifo_size(Cache* c);
@@ -284,7 +292,7 @@ void schedule();
 
 int apideliv(int ino,int edi,int esi,int ebp,int esp,int ebx,int edx,int ecx,int eax);
 void int30api();
-int int31api(int eax,int ebx,int ecx,int edx,int esi);
+int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi);
 void int30_asm();
 void int31_asm();
 

@@ -141,21 +141,24 @@ _farcall:
 _app_startup_asm:
 	pushad
 	mov ebx,[esp+36]	;&app
+	mov edi,[esp+40]	;argc
 	mov [ebx+16],esp
 	mov [ebx+20],ss
 	mov esp,[ebx+8]
 	mov ss,[ebx+12]
 	mov edx,[ebx]
 	mov ecx,[ebx+4]
+	push eax
 	mov ax,[ebx+12]
 	mov ds,ax
 	mov es,ax
 	mov fs,ax
 	mov gs,ax
+	pop eax
 	push ecx
 	push edx
 	push ebx
-	push ebx
+	push edi
 	call far [esp+8]
 	add esp,4
 	pop ebx

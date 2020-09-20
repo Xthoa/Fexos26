@@ -128,16 +128,34 @@ void task_delete(Htask task,Cache* c){
 		}
 	}
 }
-int exec(char* name,int incac,int waits,int io){
-	Htask t=create_task(name);
-	int stack=malloc_page(4);
-	int stack_lin=push_page(stack,4);
-	int esp=stack_lin+4*PAGE_SIZE-24;
+int exec(char* fname,char* args,int incac,int waits,int io){
+	int i;
+	Htask t;
+	int stack,stack_lin,esp;
+	//puts(args);
+	//puts(fname);
+	if(fopen(fname)==NULL){
+		strcat(fname,".fex");
+		//puts(fname);
+		if(fopen(fname)==NULL)
+			return -1;
+	}
+	t=create_task(fname);
+	stack=malloc_page(4);
+	//printf("%x\n",stack);
+	//delay(40);
+	stack_lin=push_page(stack,4);
+	//printf("%x\n",stack_lin);
+	//putch('P');
+	//delay(40);
+	esp=stack_lin+4*PAGE_SIZE-28;
 	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
-	*(char**)(esp+4)=name;
-	*(Htask*)(esp+8)=task_now();
+	*(char**)(esp+4)=fname;
+	*(char**)(esp+8)=args;
+	*(Htask*)(esp+12)=task_now();
 	AppOption ao={incac,waits,io};
-	*(AppOption*)(esp+12)=ao;
+	*(AppOption*)(esp+16)=ao;
 	task_ready(t);
+	//printf("f4 %x %x\n",fname,esp);
 	return t->tid;
 }

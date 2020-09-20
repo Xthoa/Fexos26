@@ -29,7 +29,6 @@ int read_cache_wait(Cache* c){
 }
 void write_cache_wait(Cache* c,int data){
 	while(fifo_size(c)==c->len-1);
-	putch('9');
 	write_cache(c,data);
 }
 int front_cache(Cache* c){

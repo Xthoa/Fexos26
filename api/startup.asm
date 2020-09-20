@@ -3,8 +3,8 @@ section .entry
 extern _start
 global _entry
 _entry:
-push dword [esp+4]
-mov [0],ebx
+push 4
+push dword [esp+12]
 call _start
-add esp,4
+add esp,8
 retf

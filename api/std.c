@@ -14,7 +14,6 @@ int printf(const char* format,...){
 		if(c=='x')putint(va_arg(v,int));
 		elif(c=='d')putdec(va_arg(v,int));
 		elif(c=='c')putchar(va_arg(v,int));
-		elif(c=='s')putstr(va_arg(v,char*));
 		elif(c>='0' && c<='9'){
 			char d=format[++i];
 			int dig=c-'0';
@@ -23,20 +22,11 @@ int printf(const char* format,...){
 			else return False;
 		}
 		elif(c=='%')putchar('%');
+		elif(c=='s'){
+			putstr(/*va_arg(v,const char*)*/"abc");
+		}
 		else return False;
 	}
 	va_end(v);
 	return True;
-}
-void exec_wait(char* name){
-	int tid=exec(name);
-	wait();
-}
-void exec_wait_hlt(char* name){
-	int tid=exec(name);
-	wait_hlt();
-}
-void exec_wait_send(char* name){
-	int tid=exec(name);
-	wait_send(search_task(tid));
 }

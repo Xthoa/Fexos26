@@ -5,4 +5,4 @@ header = fexos.h macro.h
 	gcc -c -m32 -O2 -std=c11 $*.c -o $*.o
 	gld --gc-sections $*.o $(libs) -o $*.b -T fex.lds
 	objcopy -O binary -j .text -j .rdata $*.b $*.bin
-	mkexe -i $*.bin -o $*.fex -d 16 -b 0 -e 0
+	../mkexe -i $*.bin -o $*.fex -d 16 -b 0 -e 0

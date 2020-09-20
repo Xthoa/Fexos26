@@ -19,4 +19,4 @@ std.lib: std.obj makefile
 	ar -rc std.lib std.obj
 
 clean:
-	rm *.o *.obj *.b *.lib
+	rm *.o *.obj *.lib

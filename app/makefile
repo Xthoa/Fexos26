@@ -1,4 +1,6 @@
-default : shell.fex test.fex
+default : shell.fex \
+		echo.fex cls.fex mem.fex \
+		test.fex
 
 include appmake.txt
 
