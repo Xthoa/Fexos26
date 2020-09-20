@@ -1,4 +1,4 @@
-# Fexos (26) 1.76 
+# Fexos (26) 1.7 
 Builder: Xthoa  
 Compile Time: 2020-09-20 14:30  
 Github: https://github.com/Xthoa/Fexos26
@@ -6,18 +6,21 @@ Github: https://github.com/Xthoa/Fexos26
 Brief:
 This is a small opensrc os.
 It is totally handwritten line by line.  
-Until this version, it contains:  
+It contains:  
 - A core with C and assembly
+- Memory managment
 - File system (readonly)
 - Keyboard decoder
 - Multitask and process communication
 - User app executer [normally end with .fex]
 - Shell with some commands
-- Lots of API functions (up to 40 in v1.7)
+- Lots of API functions (up to 40 funcs in v1.7)
 
-The keyboard input does not support 'insert' status and
-is always in insert mode. It doesn't support extend
-keys such as del, pgdn or end; but it supports number pad.
+The keyboard input supports extend keys like 
+ins, del, pgdn etc. but the shell does not 
+change input statuc an is always in insert mode. 
+The key will be send to the program so some 
+user app can make response to these keys.
 
 The shell has 4 internal commands now:  
 - help		Display help message
