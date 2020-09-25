@@ -12,20 +12,6 @@ Cache* kbdcac;
 void int21(int code){
 	write_cache(kbdcac,code);
 }
-void int3(){
-	printf("Press to continue.\n");
-	while(fifo_size(kbdcac)==0);
-}
-void int0e(int cr2,int code,int eip,int cs){
-	putstr("#PF ");
-	printf("code=%x cr2=%x pc=%x_%x\n",code,cr2,cs,eip);
-	while(1)hlt();
-}
-void int0d(int code,int eip,int cs){
-	putstr("#GP ");
-	printf("code=%x pc=%x_%x\n",code,cs,eip);
-	while(1)hlt();
-}
 Dword clock;
 #define qemu
 #ifdef qemu
@@ -53,14 +39,17 @@ char* global_page(char* raw,int start,int pages){
 	}
 	return task->tid*0x00400000+start*0x1000;	//pte_n = tid
 }
-char* pop_page(char* lin,int pages){
+char* pop_page(int pages){
 	Htask task=task_now();
 	int i;
-	for(i=0;(task->pte[i])&i;i++);
-	for(i--;pages--;i--){
-		task->pte[i]=0;
-	}
-	return task->tid*0x00400000+i*0x1000;	//pte_n = tid
+	for(i=0;(task->pte[i])&1;i++);
+	int raw=0;
+	//delay(40);
+	i-=pages;
+	raw=(task->pte[i]&0xfffff000);
+	memset(task->pte+i,0,pages*4+4);
+	//printf("%x %x %x\n",i,pages,raw);
+	return raw;	//pte_n = tid
 }
 char* push_page(char* raw,int pages){
 	Htask task=task_now();

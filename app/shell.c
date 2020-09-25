@@ -9,8 +9,8 @@ void raz(char* cmd,char* fname,char* args){
 	}
 }
 Bool runcmd(char* cmd){
-	static const char* info="Fexos (26) 1.7 [Xthoa]\n\
-	Compile Time: 2020-09-17 23:06\n\
+	static const char* info="Fexos (26) 1.8 [Xthoa]\n\
+	Compile Time: 2020-09-25 21:45\n\
 	Github: https://github.com/Xthoa/Fexos26\n";
 	static const char* help="Internal commands:\n\
 	help\t\tDisplay this help msg\n\
@@ -19,7 +19,7 @@ Bool runcmd(char* cmd){
 	exit\t\tExit from shell\n";
 	if(cmd[0]=='\n' || cmd[0]==0)return True;
 	if(strcmp(cmd,"exit")==0)return False;
-	elif(strcmp(cmd,"ver")==0)puts("Fexos 1.7");
+	elif(strcmp(cmd,"ver")==0)printf("Fexos 1.8");
 	elif(strcmp(cmd,"info")==0)puts(info);
 	elif(strcmp(cmd,"help")==0){
 		puts(info);

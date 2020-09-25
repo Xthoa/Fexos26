@@ -18,6 +18,7 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	//printf("t4 %x %x %x\n",task,c,ds);
 	Descriptor* d=GDT+(ds>>3);
 	int dsbs=(((unsigned char)d->base3)<<24)+(((unsigned char)d->base2)<<16)+((unsigned short)d->base);
+	int dslim=(unsigned int)((d->atrlmt&0xf00)<<8)+(unsigned int)d->limit;
 	if(eax==1)putch(ecx);
 	elif(eax==2)putint(ecx,8);
 	elif(eax==3)putdec(ecx,8);
@@ -74,10 +75,12 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	}
 	elif(eax==25){
 		while(front_cache_wait(c)!=280);
+		unexec();
 		pop_cache(c);
 	}
 	elif(eax==26){
 		while(front_cache_wait(c)!=280)hlt();
+		unexec();
 		pop_cache(c);
 	}
 	elif(eax==27){
@@ -86,6 +89,7 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 			if(ch==280)break;
 			write_cache_wait((search_task(edx))->c,ch);
 		}
+		unexec();
 		pop_cache(c);
 	}
 	elif(eax==28){
@@ -97,6 +101,7 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 			}
 			hlt();
 		}
+		unexec();
 		pop_cache(c);
 	}
 	elif(eax==29)return (int)find_task(edx);
@@ -109,8 +114,25 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	elif(eax==36)return front_cache(c);
 	elif(eax==37)return front_cache_wait(c);
 	elif(eax==38)return push_page(malloc_page(edx),edx);
-	elif(eax==39)return alloc_page(&gdtaloc,edx);
+	elif(eax==39)return alloc(&gdtaloc,edx);
 	elif(eax==40)set_segmdesc(ecx,edx,esi,edi);
+	elif(eax==41)set_segmdesc(ds>>3,dsbs,dslim+ecx,d->atrlmt&0xf0ff);
+	elif(eax==42){
+		int adr=malloc_page(ecx);
+		int adrlin=push_page(adr,ecx);
+		//printf("%x %x %x %x\n",dslim,ecx,dslim+ecx,d->atrlmt&0xf0ff);
+		set_segmdesc(ds>>3,dsbs,dslim+ecx,d->atrlmt&0xf0ff);
+		return adrlin-dsbs;
+	}
+	elif(eax==43){
+		int adr=(edx+dsbs)>>12;
+		int size=ecx;
+		//printf("p %x %x\n",adr,size);
+		set_segmdesc(ds>>3,dsbs,dslim-ecx,d->atrlmt&0xf0ff);
+		int lin=pop_page(ecx);
+		//printf("p1 %x\n",lin);
+		free_page(lin>>12,ecx);
+	}
 	return 0;
 }/*
 int int32api(int eax,int ebx,int edx){

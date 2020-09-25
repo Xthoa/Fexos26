@@ -2,6 +2,29 @@
 Bool kbd_flag;	//0 !insert ctrl alt caps !num shift e0
 Allocator gdtaloc;
 _Gdtr gdtr;
+void init_idt(){
+	set_gatedesc(0x00,(int)interr00	,16,0,GATE_INT);
+	set_gatedesc(0x01,(int)interr01	,16,0,GATE_INT);
+	set_gatedesc(0x03,(int)interr03	,16,0,GATE_INT);
+	set_gatedesc(0x04,(int)interr04	,16,0,GATE_INT);
+	set_gatedesc(0x05,(int)interr05	,16,0,GATE_INT);
+	set_gatedesc(0x06,(int)interr06	,16,0,GATE_INT);
+	set_gatedesc(0x07,(int)interr07	,16,0,GATE_INT);
+	set_gatedesc(0x08,(int)interr08	,16,0,GATE_INT);
+	set_gatedesc(0x0a,(int)interr0a	,16,0,GATE_INT);
+	set_gatedesc(0x0b,(int)interr0b	,16,0,GATE_INT);
+	set_gatedesc(0x0c,(int)interr0c	,16,0,GATE_INT);
+	set_gatedesc(0x0d,(int)int0d_asm,16,0,GATE_INT);
+	set_gatedesc(0x0e,(int)int0e_asm,16,0,GATE_INT);
+	set_gatedesc(0x10,(int)interr10	,16,0,GATE_INT);
+	set_gatedesc(0x11,(int)interr11	,16,0,GATE_INT);
+	set_gatedesc(0x12,(int)interr12	,16,0,GATE_INT);
+	set_gatedesc(0x13,(int)interr13	,16,0,GATE_INT);
+	set_gatedesc(0x20,(int)int20_asm,16,0,GATE_INT);
+	set_gatedesc(0x21,(int)int21_asm,16,0,GATE_INT);
+	set_gatedesc(0x30,(int)int30_asm,16,0,GATE_INT);
+	set_gatedesc(0x31,(int)int31_asm,16,0,GATE_INT);
+}
 __attribute__((section(".entry")))
 void entry(){
 	static const char keytabs0[0x59]={
@@ -45,12 +68,7 @@ void entry(){
 	init_allocator();
 	disable_page(0,0x100);		//total 1M [0x100 Pages] for kernel
 	//5.set idt
-	set_gatedesc(0x0d,(int)int0d_asm,16,0,GATE_INT);
-	set_gatedesc(0x0e,(int)int0e_asm,16,0,GATE_INT);
-	set_gatedesc(0x20,(int)int20_asm,16,0,GATE_INT);
-	set_gatedesc(0x21,(int)int21_asm,16,0,GATE_INT);
-	set_gatedesc(0x30,(int)int30_asm,16,0,GATE_INT);
-	set_gatedesc(0x31,(int)int31_asm,16,0,GATE_INT);
+	init_idt();
 	gdtr.base=0xa000;
 	gdtr.len=1023;
 	__asm__("lgdt %0":"=g"(gdtr));
@@ -70,7 +88,7 @@ void entry(){
 	task_ready(sys);
 	init_pit();
 	enable_pic(0xff78);
-	puts("Welcome to Fexos 1.6");
+	puts("Welcome to Fexos 1.8");
 	task_ready(app);
 	while(1){
 		if(fifo_size(&cac)>0){
@@ -104,7 +122,7 @@ void entry(){
 		}
 		hlt();
 	}
-	puts("Fexos 1.6 Exiting...");
+	puts("Fexos 1.8 Exiting...");
 	enable_pic(0xffff);
 	return;
 }
@@ -196,7 +214,7 @@ void app_startup(char* name,char* args,Htask father,AppOption ao){
 	//if(args)puts(args);
 	//printf("a %x %x %x %x %x %x\n",stack,stack_lin,&a,f->len+4,args,stack_lin+f->len+4);
 	//puts(stack_lin+f->len+4);
-	int sc=(int)alloc_page(&gdtaloc,2);
+	int sc=(int)alloc(&gdtaloc,2);
 	//printf("g2 %x\n",sc); 
 	//dispalocr(&gdtaloc);
 	set_segmdesc(sc,stack_lin,f->len-13,SEG_CODE);
@@ -207,8 +225,12 @@ void app_startup(char* name,char* args,Htask father,AppOption ao){
 	a.esp=(ss+bss)*PAGE_SIZE-9;	//reserve space of 2 arg
 	app_startup_asm(&a,2);
 	//printf("%x %x %x %2x %2x\n",father,father->tid,father->c,father->c->read,father->c->write);
-	afree_page(&gdtaloc,sc,2);
+	afree(&gdtaloc,sc,2);
+	int mem=pop_page(ss+bss);
+	//printf("%x\n",mem);
+	free_page(stack>>12,ss+bss);
 	//dispalocr(&gdtaloc);
+	free_page((int)self->pte>>12,1);
 	write_cache(self->c,280);
 	task_delete(self);
 	//while(1);

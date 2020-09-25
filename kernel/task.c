@@ -95,8 +95,7 @@ void task_sleep(Htask task){
 		}
 	}
 }
-void task_delete(Htask task,Cache* c){
-	c->task=NULL;
+void task_delete(Htask task){
 	if(task->flag!=2)return;
 	__asm__("cli");
 	task->flag=0;
@@ -158,4 +157,7 @@ int exec(char* fname,char* args,int incac,int waits,int io){
 	task_ready(t);
 	//printf("f4 %x %x\n",fname,esp);
 	return t->tid;
+}
+void unexec(){
+	free_page((int)pop_page(4)>>12,4);
 }

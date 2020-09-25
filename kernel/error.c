@@ -10,3 +10,17 @@ void error(int x){
 	printf("Error 0x%x: %s\n",x,err[x]);
 	while(1)hlt();
 }
+void interrdeliv(int no,int code,int eip,int cs,int eflags){
+	printf("Int 0x%2x (0x%x) %x %x_%x",no,code,eflags,cs,eip);
+	while(1)hlt();
+}
+void int0e(int cr2,int code,int eip,int cs){
+	putstr("#PF ");
+	printf("code=%x cr2=%x pc=%x_%x\n",code,cr2,cs,eip);
+	while(1)hlt();
+}
+void int0d(int code,int eip,int cs){
+	putstr("#GP ");
+	printf("code=%x pc=%x_%x\n",code,cs,eip);
+	while(1)hlt();
+}

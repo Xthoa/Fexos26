@@ -8,6 +8,7 @@
 #define Byte char
 #define Word short
 #define Dword int
+#define Dwordu unsigned int
 #define Qword long long
 #define Usnd unsigned
 #define Ptr *
@@ -113,7 +114,7 @@ typedef struct _TCB{
 	Cache* c;
 } TCB,Task,*Htask;
 typedef struct _FREEINFO{
-	int addr,size;
+	Dwordu addr,size;
 } Freeinfo;
 typedef struct _GMM{
 	Freeinfo *root;
@@ -226,6 +227,22 @@ int strcmp(char* dst,char* src);
 void app_startup_asm(App* a,int argc);
 void destart(Htask t);
 
+void interr00();
+void interr01();
+void interr03();
+void interr04();
+void interr05();
+void interr06();
+void interr07();
+void interr08();
+void interr0a();
+void interr0b();
+void interr0c();
+void interr10();
+void interr11();
+void interr12();
+void interr13();
+
 void entry();
 void cls_bg();
 void cpuids();
@@ -240,7 +257,7 @@ void int20();
 void enable_pic(int irq);
 void init_pit();
 char* push_page(char* raw,int pages);
-char* pop_page(char* lin,int pages);
+char* pop_page(int pages);
 char* global_page(char* raw,int start,int pages);
 char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages);
 void set_segmdesc(int no,int base,int limit,int attr);

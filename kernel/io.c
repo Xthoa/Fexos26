@@ -5,6 +5,13 @@ void putch(char c){
 	if(c=='\n' || c==KEY_PAD_ENTER){
 		curpos.x=((curpos.x+80)/80)*80;
 		curpos.y=curpos.lim=0;
+		if(curpos.x==80*25){
+			curpos.x-=80;
+			Position dst={0,0};
+			Position src={0,80};
+			int len=80*25;
+			vrammove(dst,src,len);
+		}
 	}
 	elif(c=='\r')curpos.y=0;
 	elif(c=='\b'){

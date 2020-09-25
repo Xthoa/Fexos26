@@ -30,8 +30,8 @@ _int0e_asm:
 	mov ax,8
 	mov ds,ax
 	mov eax,[esp+36]
-	push eax
-	mov eax,[esp+36]
+	mov ebx,[esp+32]
+	mov ss,ax
 	push eax
 	mov eax,cr2
 	push eax
@@ -42,20 +42,26 @@ _int0e_asm:
 	.fin:
 	;hlt
 	;jmp .fin
+	hlt
 	iretd
 _int0d_asm:
 	pushad
 	mov ax,8
 	mov ds,ax
-	push dword [esp+40]
-	push dword [esp+40]
-	push dword [esp+40]
+	mov ebx,[esp+40]
+	mov ecx,[esp+36]
+	mov edx,[esp+32]
+	mov ss,ax
+	push ebx
+	push ecx
+	push edx
 	call _int0d
 	popad
 	add esp,4
 	.fin:
 	;hlt
 	;jmp .fin
+	hlt
 	iretd
 _cpuid:
 	push edi
