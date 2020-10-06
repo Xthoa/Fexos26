@@ -1,6 +1,6 @@
-# Fexos (26) 1.7 
+# Fexos (26) 1.9 
 Builder: Xthoa  
-Compile Time: 2020-09-20 14:30  
+Compile Time: 2020-10-06 21:30  
 Github: https://github.com/Xthoa/Fexos26
 
 Brief:
@@ -14,7 +14,7 @@ It contains:
 - Multitask and process communication
 - User app executer [normally end with .fex]
 - Shell with some commands
-- Lots of API functions (up to 40 funcs in v1.7)
+- Lots of API functions (up to 52 funcs in v1.9)
 
 The keyboard input supports extend keys like 
 ins, del, pgdn etc. but the shell does not 
@@ -28,15 +28,19 @@ The shell has 4 internal commands now:
 - ver		Display version info
 - exit		Exit from shell
 
-In update v1.7, inputing filename excluding '.fex' can also
-be recognized. .fex file format added a magic number
-0x78656600 ('\0fex') in the front of the file. If the 
-magic number is incorrect, the startup will terminate.
+In update v1.9, the 'cache' structure has another name 'file'
+and can be used to describe a dynamic file. 'file' structure
+used to describe file in filesystem changes its name to 'staticfile'.
+Opening a file adds an 'accessed' bit to its flag whatever the
+open mode is. After that, any other open() will fail and return 
+NULL. Closing the file clears the bit and it allows open() to open it again.
 
 Packed .fex executable:
 - cls.fex
 - mem.fex
 - echo.fex
+- shell.fex
+- test.fex
 
 Compilor dependency:  
 Most is from GCC 4.9.2 32bit tools within my devc++  
@@ -51,3 +55,14 @@ Other handwritten tools are in /tools folder:
 - imager
 - mkexe
 
+The next version is planned to be v2.0. 
+It planned to have the following features:
+- GUI
+- File system query and operation
+According to the plan, these features are going to be added in a few versions:
+- Mouse
+- Drivers
+- Settings
+- 32bit disk operation
+- Network system
+- ......whatever! I don't think i have enough time and knowledge for them...

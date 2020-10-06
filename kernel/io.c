@@ -1,7 +1,11 @@
 //io.c
 #include "kernel.h"
+void dispchar(int row,int col,char ch,char color){
+	*(char*)(VRAM+row*2+col*2+1)=color;
+	*(char*)(VRAM+row*2+col*2)=ch;
+}
 Curpos curpos;
-void putch(char c){
+void oputch(char c){
 	if(c=='\n' || c==KEY_PAD_ENTER){
 		curpos.x=((curpos.x+80)/80)*80;
 		curpos.y=curpos.lim=0;
@@ -19,7 +23,7 @@ void putch(char c){
 		Position to={curpos.x,curpos.y-1};
 		Position from={curpos.x,curpos.y};
 		vramcpy(to,from,curpos.lim-curpos.y);
-		putchar(curpos.x,curpos.lim-1,32,BLACK);
+		dispchar(curpos.x,curpos.lim-1,32,BLACK);
 		curpos.y--;
 		curpos.lim--;
 	}
@@ -33,20 +37,19 @@ void putch(char c){
 	}
 	elif(c=='\t'){
 		int len=(curpos.y|3)+1-curpos.y;
-		for(int i=0;i<len;i++)putch(' ');
+		for(int i=0;i<len;i++)oputch(' ');
 	}
 	else{
 		Position to={curpos.x,curpos.y+1};
 		Position from={curpos.x,curpos.y};
 		vrammove(to,from,curpos.lim-curpos.y);
-		putchar(curpos.x,curpos.y,c,GREY);
+		dispchar(curpos.x,curpos.y,c,GREY);
 		curpos.y++;
 		curpos.lim++;
 	}
-//	dispdec(0,65,4,curpos.x,WHITE);
-//	dispdec(0,70,4,curpos.y,WHITE);
-//	dispdec(0,75,4,curpos.lim,WHITE);
-//	delay(4);
+}
+void putch(int c){
+	write_cache_wait(stdout,c);
 }
 int putstr(const char* str){
 	while(*str){
@@ -86,48 +89,27 @@ int printf(const char* format,...){
 	va_end(v);
 	return True;
 }
-void putchar(int row,int col,char ch,char color){
-	*(char*)(VRAM+row*2+col*2+1)=color;
-	*(char*)(VRAM+row*2+col*2)=ch;
-}
-void dispstr(int x,int y,const char* str,char col){
-	while(*str){
-		char c=*str;
-		if(c=='\n')x++,y=0;
-		elif(c=='\r')y=0;
-		elif(c=='\b')y--;
-		elif(c=='\t')y=(y|3)+1;
-		else putchar(x,y,*str,col);
-		str++;
-		y++;
-		if(y==80)x++,y=0;
-	}
-}
-void putdigit(int x,int y,unsigned int dig,char col){
-	if(dig>9)putchar(x,y,dig+'A'-10,col);
-	else putchar(x,y,dig+'0',col);
-}
-void dispint(int x,int y,int dig,int val,char col){
-	y+=dig-1;
-	for(;dig;dig--){
-		putdigit(x,y--,(unsigned int)val&0xf,col);
-		val>>=4;
-	}
+char transdig(int dig){
+	if(dig>9)return dig+'A'-0xa;
+	else return dig+'0';
 }
 void putint(int val,int dig){
-	dispint(curpos.x,curpos.y,dig,val,GREY);
-	curpos.y+=dig;
-	curpos.lim+=dig;
-}
-void dispdec(int x,int y,int dig,int val,char col){
-	y+=dig-1;
-	for(;dig;dig--){
-		putdigit(x,y--,(unsigned int)val%10,col);
-		val/=10;
+	if(dig>8)return;
+	char buf[9]={0};
+	int y=dig-1;
+	while(dig--){
+		buf[y--]=transdig(val&0xf);
+		val>>=4;
 	}
+	putstr(buf);
 }
 void putdec(int val,int dig){
-	dispdec(curpos.x,curpos.y,dig,val,GREY);
-	curpos.y+=dig;
-	curpos.lim+=dig;
+	if(dig>8)return;
+	char buf[9]={0};
+	int y=dig-1;
+	while(dig--){
+		buf[y--]=transdig(val%10);
+		val/=10;
+	}
+	putstr(buf);
 }

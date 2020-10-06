@@ -23,7 +23,7 @@ void init_allocator(){
 	}
 	f=((Freeinfo*)0x200c)+(allocr->size++);
 	f->addr=0xffffffff;
-	f->size=0;
+	f->size=1;
 	//printf("%8x\n",all);
 	bootinfo->os_usable_pages=all;
 }

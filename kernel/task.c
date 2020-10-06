@@ -133,12 +133,16 @@ int exec(char* fname,char* args,int incac,int waits,int io){
 	int stack,stack_lin,esp;
 	//puts(args);
 	//puts(fname);
-	if(fopen(fname)==NULL){
+	StaticFile* f;
+	if((f=fopen(fname))==NULL){
 		strcat(fname,".fex");
 		//puts(fname);
-		if(fopen(fname)==NULL)
+		if((f=fopen(fname))==NULL)
 			return -1;
 	}
+	//printf("%x\n",f);
+	//delay(20);
+	fclose(f);
 	t=create_task(fname);
 	stack=malloc_page(4);
 	//printf("%x\n",stack);

@@ -26,3 +26,9 @@ typedef struct _TCB{
 	char* name;
 	int c;
 } *Htask;
+typedef struct _FIFO{
+	int len;
+	volatile int read,write;
+	int* buf;
+	int flag;
+} Buffer,Cache,Fifo,Pipe,File;

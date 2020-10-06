@@ -60,10 +60,10 @@ void entry(){
 	int buf[64];
 	fifo_init(&cac,buf,64);
 	kbdcac=&cac;
-	Cache input;
-	int buf2[64];
-	fifo_init(&input,buf2,64);
-	stdin=&input;
+	Cache out;
+	int buf2[256];
+	fifo_init(&out,buf2,256);
+	stdout=&out;
 	//4.init memory
 	init_allocator();
 	disable_page(0,0x100);		//total 1M [0x100 Pages] for kernel
@@ -88,7 +88,7 @@ void entry(){
 	task_ready(sys);
 	init_pit();
 	enable_pic(0xff78);
-	puts("Welcome to Fexos 1.8");
+	puts("Welcome to Fexos 1.9");
 	task_ready(app);
 	while(1){
 		if(fifo_size(&cac)>0){
@@ -120,16 +120,20 @@ void entry(){
 				write_cache(app->c,key);
 			}
 		}
+		while(fifo_size(stdout)>0){
+			int k=read_cache(stdout);
+			oputch(k);
+		}
 		hlt();
 	}
-	puts("Fexos 1.8 Exiting...");
+	puts("Fexos 1.9 Exiting...");
 	enable_pic(0xffff);
 	return;
 }
 void cls_bg(){
 	memset((void*)VRAM,0,80*25*2);
 }
-Cache* stdin;
+Cache* stdout;
 BootInfo* bootinfo;
 void cpuids(){
 	int buf[17]={0};
@@ -161,7 +165,7 @@ void manager(){
 }
 void app_startup(char* name,char* args,Htask father,AppOption ao){
 	Htask self=task_now();
-	File* f=fopen(name);
+	StaticFile* f=fopen(name);
 	int* p=filepos(f);
 	//printf("f6 %x %x %x %x %x %x\n",f,p,name,args,father,ao.incac);
 	int magic=*(p++);
@@ -207,6 +211,7 @@ void app_startup(char* name,char* args,Htask father,AppOption ao){
 	//delay(40);
 	//printf("%x %x %x\n",ss,bss,entry);
 	memcpy(stack_lin+4,p,f->len-16);
+	fclose(f);
 	stack_lin[0]=0;
 	stack_lin[1]=f->len+4;
 	stack_lin[2]=&a;

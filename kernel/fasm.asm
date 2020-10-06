@@ -42,7 +42,7 @@ _int0e_asm:
 	.fin:
 	;hlt
 	;jmp .fin
-	hlt
+	;hlt
 	iretd
 _int0d_asm:
 	pushad
@@ -61,7 +61,7 @@ _int0d_asm:
 	.fin:
 	;hlt
 	;jmp .fin
-	hlt
+	;hlt
 	iretd
 _cpuid:
 	push edi

@@ -7,16 +7,25 @@ void init_fs(){
 	fs.start=base+32;
 	//printf("%x %x %x\n",base,fs.filecnt,fs.start);
 } 
-File* fopen(char* name){
+StaticFile* fopen(char* name){
 	for(int i=0;i<fs.filecnt;i++){
-		File* f=fs.start+i;
-		//printf("e %x %x %s\n",i,f,f->name);
-		if(strcmp(f->name,name)==0)return f;
+		StaticFile* f=fs.start+i;
+		if(strcmp(f->name,name)==0){
+			if((f->flag&32)==0){
+				//printf("%x\n",f);
+				//printf("%x\n",f->flag);
+				f->flag|=32;
+				//printf("%x\n",f->flag);
+				return f;	//accessed lock
+			}
+			else return NULL;
+		}
 	}
-	// TODO: add kind of lock here to ensure r/w safety
 	return NULL;
 }
-char* filepos(File* f){
+char* filepos(StaticFile* f){
 	return ((char*)fs.start)+f->pos;
 }
-// TODO: add function 'fclose' used to free file lock
+void fclose(StaticFile* f){
+	f->flag&=-33;		//unlocking
+}

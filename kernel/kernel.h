@@ -97,8 +97,8 @@ typedef struct _FIFO{
 	int len;
 	volatile int read,write;
 	int* buf;
-	struct _TCB * task;
-} Buffer,Cache,Fifo;
+	int flag;
+} Buffer,Cache,Fifo,Pipe,File;
 typedef struct _REGS{
 	int ds,es,fs,gs;
 	int edi,esi,ebp,esp,ebx,edx,ecx,eax;
@@ -160,15 +160,15 @@ typedef struct _BOOTINFO{
 	}pack cpuid;	//0x650-0x693
 	int os_usable_pages;	//0x694
 } BootInfo;
-typedef struct _FILE{
+typedef struct _StaticFILE{
 	char flag;
 	char name[23];
 	int len;
 	int pos;
-} File,FileInfo;
+} StaticFile,FileInfo;
 typedef struct _FS{
 	int filecnt;
-	File* start;
+	StaticFile* start;
 } FS;
 typedef struct _PROG{
 	int eip,cs;
@@ -200,7 +200,7 @@ typedef struct __GDTR{
 extern Cache* kbdcac;
 extern Allocator* allocr;
 extern Curpos curpos;
-extern Cache* stdin;
+extern Cache* stdout;
 extern Bool kbd_flag;
 extern Dword clock;
 extern TaskTab tasktab;
@@ -263,17 +263,15 @@ char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages);
 void set_segmdesc(int no,int base,int limit,int attr);
 void app_startup(char* name,char* args,Htask father,AppOption ao);
 
-void putchar(int row,int col,char ch,char color);
-void dispstr(int x,int y,const char* str,char col);
-void putdigit(int x,int y,unsigned int dig,char col);
-void dispint(int x,int y,int dig,int val,char col);
+void dispchar(int row,int col,char ch,char color);
+char transdig(int dig);
 int puts(const char* str);
 int printf(const char* format,...);
 void putint(int val,int dig);
-void dispdec(int x,int y,int dig,int val,char col);
 void putdec(int val,int dig);
-void putch(char c);
+void putch(int c);
 int putstr(const char* str);
+void oputch(char c);
 
 void init_allocator();
 void* malloc(int size);
@@ -314,5 +312,5 @@ void int30_asm();
 void int31_asm();
 
 void init_fs();
-File* fopen(char* name);
-char* filepos(File* f);
+StaticFile* fopen(char* name);
+char* filepos(StaticFile* f);

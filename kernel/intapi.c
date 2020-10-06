@@ -15,7 +15,6 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	Htask task=task_now();
 	int ds=((App*)ebx)->ss;
 	Cache* c=task->c;
-	//printf("t4 %x %x %x\n",task,c,ds);
 	Descriptor* d=GDT+(ds>>3);
 	int dsbs=(((unsigned char)d->base3)<<24)+(((unsigned char)d->base2)<<16)+((unsigned short)d->base);
 	int dslim=(unsigned int)((d->atrlmt&0xf00)<<8)+(unsigned int)d->limit;
@@ -26,7 +25,7 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	elif(eax==5)putdec(ecx,edx);
 	elif(eax==6)putch('\n');
 	elif(eax==7)putch('\r');
-	//elif(eax==8)puts("Hello World!");
+	elif(eax==8)puts("Hello World!");
 	elif(eax==9)return read_cache(c);
 	elif(eax==10)return read_cache_wait(c);
 	elif(eax==11)write_cache(c,ecx);
@@ -38,12 +37,12 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	elif(eax==17){
 		cls_bg();
 		curpos.x=curpos.y=curpos.lim=0;
-	}/*
+	}
 	elif(eax==18){
-		if(ebx!=-1)curpos.x=ebx;
-		if(ecx!=-1)curpos.y=ecx;
-		if(edx!=-1)curpos.lim=edx;
-	}*/
+		if(edx!=-1)curpos.x=edx;
+		if(esi!=-1)curpos.y=esi;
+		if(edi!=-1)curpos.lim=edi;
+	}
 	elif(eax==19){
 		while(ecx--){
 			*(char*)(dsbs+(esi++))=read_cache_wait(c);
@@ -68,9 +67,6 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	elif(eax==22)return malloc_page(edx);
 	elif(eax==23)push_page(edx,ecx);
 	elif(eax==24){
-		//printf("t3 %x %x %x %x\n",ds,dsbs,ecx,edx);
-		//puts(dsbs+ecx);
-		//puts(dsbs+edx);
 		return exec(dsbs+ecx,dsbs+edx,FATHER,WAIT,ALL);
 	}
 	elif(eax==25){
@@ -120,28 +116,37 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	elif(eax==42){
 		int adr=malloc_page(ecx);
 		int adrlin=push_page(adr,ecx);
-		//printf("%x %x %x %x\n",dslim,ecx,dslim+ecx,d->atrlmt&0xf0ff);
 		set_segmdesc(ds>>3,dsbs,dslim+ecx,d->atrlmt&0xf0ff);
 		return adrlin-dsbs;
 	}
 	elif(eax==43){
 		int adr=(edx+dsbs)>>12;
 		int size=ecx;
-		//printf("p %x %x\n",adr,size);
 		set_segmdesc(ds>>3,dsbs,dslim-ecx,d->atrlmt&0xf0ff);
 		int lin=pop_page(ecx);
-		//printf("p1 %x\n",lin);
 		free_page(lin>>12,ecx);
 	}
+	elif(eax==44){
+		StaticFile* f=fopen(dsbs+esi);
+		if(f==NULL)return NULL;
+		File* fc=dsbs+edx;
+		fc->read=0;
+		fc->len=fc->write=f->len;
+		fc->buf=filepos(f);
+		fc->flag=(((int)f)<<16)+f->flag|2;		//write forbidden
+		return fc;
+	}
+	elif(eax==45)write_cache(dsbs+edx,ecx);
+	elif(eax==46)return read_cache(dsbs+edx);
+	elif(eax==47)return front_cache(dsbs+edx);
+	elif(eax==48)pop_cache(dsbs+edx);
+	elif(eax==49){
+		File* fc=dsbs+edx;
+		StaticFile* f=(File*)((fc->flag&0xffff0000)>>16);
+		fclose(f);
+	}
+	elif(eax==50)write_cache_wait(dsbs+edx,ecx);
+	elif(eax==51)return read_cache_wait(dsbs+edx);
+	elif(eax==52)return front_cache_wait(dsbs+edx);
 	return 0;
-}/*
-int int32api(int eax,int ebx,int edx){
-	//system functions
-	int ssi=task_now()->ss,csi=ssi-8,dsi=ssi+8;
-	Descriptor* ds=GDT+(dsi>>3);
-	Descriptor* cs=GDT+(csi>>3);
-	Descriptor* ss=GDT+(ssi>>3);
-	int dsbs=(((unsigned char)ds->base3)<<24)+(((unsigned char)ds->base2)<<16)+((unsigned short)ds->base);
-	if(eax==1)return malloc_page(edx);
-	elif(eax==2)exec(dsbs+ebx);
-}*/
+}

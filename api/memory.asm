@@ -8,10 +8,12 @@ _malloc_raw:
 	ret
 global _push_page
 _push_page:
+	push ecx
 	mov eax,23
-	mov edx,[esp+4]
-	mov ecx,[esp+8]
+	mov edx,[esp+8]
+	mov ecx,[esp+12]
 	int 0x31
+	pop ecx
 	ret
 global _push_malloc_page
 _push_malloc_page:
