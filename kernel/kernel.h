@@ -25,15 +25,19 @@
 #define GDT ((Descriptor*)0xa000)
 #define IDT ((Gate*)0xa800)
 #define DISK 0xb000
-#define VRAM 0xB8000
+#define VRAM bootinfo->vram
 
 #define BLACK 0
-#define BLUE 1
-#define GREEN 2
-#define RED 4
-#define GREY 7
-#define LIGHT 8
-#define WHITE 15
+#define BLUE 0x000f
+#define GREEN 0x03e0
+#define RED 0x7800
+#define GREY 0x7bef
+#define SILVER 0xbdf7
+#define LIGHTB 0x0010
+#define LIGHTG 0x0400
+#define LIGHTR 0x8000
+#define LIGHT LIGHTR|LIGHTG|LIGHTB
+#define WHITE 0xffff
 
 #define SEG_RPL 1
 #define DPL 0x20
@@ -150,7 +154,7 @@ typedef struct _BOOTINFO{
 		char day;
 		char month;
 	}pack date;	//0x506-0x50d
-	short resv;		//0x50e
+	short vbemode;		//0x50e
 	ARDS ards[16];	//0x510-0x64f
 	struct{		//68
 		int max_func;
@@ -159,6 +163,8 @@ typedef struct _BOOTINFO{
 		char name[48];
 	}pack cpuid;	//0x650-0x693
 	int os_usable_pages;	//0x694
+	int vram;	//0x698
+	short scrx,scry;	//0x69c
 } BootInfo;
 typedef struct _StaticFILE{
 	char flag;
@@ -209,6 +215,8 @@ extern FS fs;
 extern int segcnt;
 extern Allocator gdtaloc;
 extern _Gdtr gdtr;
+extern char* sysfont;
+extern int scrx,scry;
 
 void* memset(void* dst,int val,int size);
 void int21_asm();
@@ -263,7 +271,7 @@ char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages);
 void set_segmdesc(int no,int base,int limit,int attr);
 void app_startup(char* name,char* args,Htask father,AppOption ao);
 
-void dispchar(int row,int col,char ch,char color);
+void dispchar(int row,int col,char ch,short back,short color);
 char transdig(int dig);
 int puts(const char* str);
 int printf(const char* format,...);

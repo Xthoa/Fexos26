@@ -1,20 +1,33 @@
 //io.c
 #include "kernel.h"
-void dispchar(int row,int col,char ch,char color){
-	*(char*)(VRAM+row*2+col*2+1)=color;
-	*(char*)(VRAM+row*2+col*2)=ch;
+char *sysfont;
+int scrx,scry;
+void dispchar(int row,int col,char ch,short back,short color){
+	int a=row+col;
+	short* pos=(short*)(VRAM+((int)(a/scrx)*256*scrx)+((a%scrx)*16));
+	char* font=sysfont+ch*16;
+	for(int i=0;i<16;i++,pos+=((scrx*16)/sizeof(short))){
+		char bit=font[i];
+		short* ps=pos;
+		for(int j=0;j<8;j++,ps+=(2/sizeof(short))){
+			*ps=(bit&(1<<(7-j))?color:back);
+		}
+	}
 }
 Curpos curpos;
 void oputch(char c){
 	if(c=='\n' || c==KEY_PAD_ENTER){
-		curpos.x=((curpos.x+80)/80)*80;
+		curpos.x=((curpos.x+scrx)/scrx)*scrx;
 		curpos.y=curpos.lim=0;
-		if(curpos.x==80*25){
-			curpos.x-=80;
+		if(curpos.x==scrx*scry){
+			curpos.x-=scrx;
 			Position dst={0,0};
-			Position src={0,80};
-			int len=80*25;
+			Position src={0,scrx};
+			int len=scrx*(scry-1);
+			//delay(80);
 			vrammove(dst,src,len);
+			memset(VRAM+(scry-1)*scrx*16*16,0,scrx*16*16);
+			//delay(80);
 		}
 	}
 	elif(c=='\r')curpos.y=0;
@@ -23,7 +36,7 @@ void oputch(char c){
 		Position to={curpos.x,curpos.y-1};
 		Position from={curpos.x,curpos.y};
 		vramcpy(to,from,curpos.lim-curpos.y);
-		dispchar(curpos.x,curpos.lim-1,32,BLACK);
+		dispchar(curpos.x,curpos.lim-1,32,BLACK,BLACK);
 		curpos.y--;
 		curpos.lim--;
 	}
@@ -43,7 +56,7 @@ void oputch(char c){
 		Position to={curpos.x,curpos.y+1};
 		Position from={curpos.x,curpos.y};
 		vrammove(to,from,curpos.lim-curpos.y);
-		dispchar(curpos.x,curpos.y,c,GREY);
+		dispchar(curpos.x,curpos.y,c,BLACK,SILVER);
 		curpos.y++;
 		curpos.lim++;
 	}

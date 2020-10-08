@@ -1,7 +1,7 @@
 #include "fexos.h"
 Bool runcmd(char* cmd){
-	static const char* info="Fexos (26) 1.9 [Xthoa]\n\
-	Compile Time: 2020-10-06 21:30\n\
+	static const char* info="Fexos (26) 2.0 [Xthoa]\n\
+	Compile Time: 2020-10-07 16:45\n\
 	Github: https://github.com/Xthoa/Fexos26\n";
 	static const char* help="Internal commands:\n\
 	help\t\tDisplay this help msg\n\
@@ -10,7 +10,7 @@ Bool runcmd(char* cmd){
 	exit\t\tExit from shell\n";
 	if(cmd[0]=='\n' || cmd[0]==0)return True;
 	if(strcmp(cmd,"exit")==0)return False;
-	elif(strcmp(cmd,"ver")==0)puts("Fexos 1.9");
+	elif(strcmp(cmd,"ver")==0)puts("Fexos 2.0");
 	elif(strcmp(cmd,"info")==0)puts(info);
 	elif(strcmp(cmd,"help")==0){
 		puts(info);
@@ -38,7 +38,7 @@ Bool runcmd(char* cmd){
 	return True;
 }
 int start(int argc,char* argv){
-	puts("Fexos 1.9 Shell");
+	puts("Fexos 2.0 Shell");
 	while(1){
 		putchar('>');
 		char cmd[64]={0};

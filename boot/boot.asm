@@ -4,10 +4,6 @@ bits 16
 %include "desc.inc"
 org 07c00h
 Cylinders equ 3
-;1.print boot message
-mov si,msg
-call puts
-cli
 ;2.read floppy to 0xb000 from sector[1]
 mov ax,0x0b00
 mov es,ax
@@ -79,6 +75,31 @@ int 1ah
 mov word [0x50a],cx
 mov word [0x50c],dx
 clc
+;vbe
+mov ax,0x3e0
+mov es,ax
+mov di,0
+mov ax,0x4f01
+mov cx,0x117
+int 0x10
+mov ax,[0x3e12]
+mov [0x69c],ax
+mov ax,[0x3e14]
+mov [0x69e],ax
+mov eax,[0x3e28]
+mov [0x698],eax
+mov ax,0x4f02
+mov bx,0x117
+add bx,0x4000
+int 0x10
+mov ax,0x117
+mov word [0x50e],ax
+mov ax,0x3e0
+mov es,ax
+mov di,0
+mov ax,0
+mov cx,256
+rep stosb
 ;7.clear int
 cli
 ;8.load gdtr
@@ -105,14 +126,14 @@ cli
 hlt
 jmp fin
 
-msg:
-	db "Booting...",0
 rderr:
-	db "Read Disk Error;",0x0a
+	db "Read Disk Error",0x0a,0
 memerr:
-	db "Memory Test Error;",0x0a
+	db "Memory Test Error",0x0a,0
 errs:
-	db "Press any key to stop...",0
+	db "Press to stop.",0x0a,0
+damnvbe:
+	db "What's wrong with your VGA",0x0a,0
 gdt:
 	Descriptor 0,0,0
 	;null

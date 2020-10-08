@@ -80,15 +80,31 @@ void entry(){
 	f->size=123;
 	cpuids();
 	init_fs();
-	segcnt=5;
 	init_mt();
 	Htask sys=create_task_0();
+	task_ready(sys);
+	//delay(100);
+	scrx=bootinfo->scrx>>3;
+	scry=bootinfo->scry>>4;
+	//delay(100);
+	sysfont=malloc_page(1);
+	sysfont=push_page(sysfont,1);
+	//delay(100);
+	StaticFile* sf=fopen("system.font");
+	char* pos=filepos(sf);
+	memcpy(sysfont,pos,4096);
+	fclose(sf);
+	//delay(100);
+	bootinfo->vram=push_page(VRAM,bootinfo->scrx*bootinfo->scry/2048);
+	//delay(40);
+	dispchar(0,0,'A',BLACK,WHITE);
+	//delay(40);
+	segcnt=5;
 	Htask app=create_task("Manager");
 	task_init(app,manager);
-	task_ready(sys);
 	init_pit();
 	enable_pic(0xff78);
-	puts("Welcome to Fexos 1.9");
+	puts("Welcome to Fexos 2.0");
 	task_ready(app);
 	while(1){
 		if(fifo_size(&cac)>0){
@@ -126,12 +142,12 @@ void entry(){
 		}
 		hlt();
 	}
-	puts("Fexos 1.9 Exiting...");
+	puts("Fexos 2.0 Exiting...");
 	enable_pic(0xffff);
 	return;
 }
 void cls_bg(){
-	memset((void*)VRAM,0,80*25*2);
+	memset((void*)VRAM,0,bootinfo->scrx*bootinfo->scry*2);
 }
 Cache* stdout;
 BootInfo* bootinfo;

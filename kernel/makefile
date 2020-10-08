@@ -1,7 +1,7 @@
 objs = start.o memory.o task.o io.o cache.o intapi.o file.o desc.o \
 		fasm.obj intapia.obj error.o
 
-default: start.bin
+default: start.bin system.font
 
 %.o: %.c makefile kernel.h
 	gcc -c -m32 -O1 -std=c11 $*.c -o $*.o
@@ -14,6 +14,9 @@ start.b: $(objs) c.lds makefile
 
 start.bin: start.b makefile
 	objcopy -O binary -j .text -j .rdata start.b start.bin
+
+system.font: system.font.txt makefile
+	../makefont system.font.txt system.font
 
 clean:
 	rm *.o *.b *.obj *.bin

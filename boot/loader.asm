@@ -23,7 +23,7 @@ mov ss,ax
 ;5.init page dir lv.2
 mov ebx,PTE
 mov eax,PTE_4K
-mov ecx,1024
+mov ecx,512
 .loop1:
 mov [ebx],eax
 add ebx,4

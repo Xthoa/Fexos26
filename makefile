@@ -3,7 +3,7 @@ kernel = kernel\start.bin
 app = app\shell.fex app\test.fex \
 	app\mem.fex app\cls.fex app\echo.fex \
 	app\run.fex
-need = rule.txt fsrule.txt
+need = rule.txt fsrule.txt kernel\system.font.txt
 
 default:
 	make img

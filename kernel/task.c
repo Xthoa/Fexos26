@@ -15,6 +15,7 @@ Htask create_task_0(){
 	t->tid=0;
 	t->name="System";
 	t->sel=16;
+	t->pte=PTE;
 	return t;
 }
 Htask create_task(char* name){
@@ -26,8 +27,8 @@ Htask create_task(char* name){
 			t->name=name;
 			t->sel=16;
 			int p=malloc_page(1);
-			memset(p,0,4096);
 			//p=push_page(p,1);
+			memset(p,0,4096);
 			*(int*)(PDE+i*4)=(int)p+PDE_TAB;
 			//printf("T0 %x %x %x %x\n",t,i,(int)(PDE+i*4),*(int*)(PDE+i*4));
 			t->pte=p;
