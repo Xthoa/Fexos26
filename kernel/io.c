@@ -4,12 +4,12 @@ char *sysfont;
 int scrx,scry;
 void dispchar(int row,int col,char ch,short back,short color){
 	int a=row+col;
-	short* pos=(short*)(VRAM+((int)(a/scrx)*256*scrx)+((a%scrx)*16));
+	short* pos=(short*)(VRAM+((int)(a/scrx)*256*scrx)+((a%scrx)*16)-16*scrx);
 	char* font=sysfont+ch*16;
-	for(int i=0;i<16;i++,pos+=((scrx*16)/sizeof(short))){
+	for(int i=0;i<16;i++,pos+=((scrx*8))){
 		char bit=font[i];
 		short* ps=pos;
-		for(int j=0;j<8;j++,ps+=(2/sizeof(short))){
+		for(int j=0;j<8;j++,ps++){
 			*ps=(bit&(1<<(7-j))?color:back);
 		}
 	}

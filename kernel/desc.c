@@ -61,9 +61,9 @@ char* push_page(char* raw,int pages){
 	}
 	return task->tid*0x00400000+start*0x1000;	//pte_n = tid
 }
-char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages){
-	pde[pte_n]=pte+PDE_TAB;
-	for(int i=start;i<pages+start;i++)pte[i]=PTE_4K+raw+i*4096;
+char* local_page(int* pde,int ptephy,int* pte,char* raw,int pte_n,int start,int pages){
+	pde[pte_n]=ptephy+PDE_TAB;
+	for(int i=start;i<pages+start;i++)pte[i]=PTE_4K+raw+(i-start)*4096;
 	return (int)pte_n*0x00400000+start*0x1000;
 }
 void set_segmdesc(int no,int base,int limit,int attr){

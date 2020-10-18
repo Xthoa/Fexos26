@@ -2,7 +2,8 @@
 global _int21_asm,_hlt,_out8,_int20_asm,_restart
 global _int0e_asm,_int0d_asm,_cpuid,_memset,_read_cr3
 global _read_eflags,_delay,_farcall,_destart,_app_startup_asm
-extern _int21,_int3,_int0e,_int0d,_int20
+global _cr3_kernel,_cr3_user
+extern _int21,_int3,_int0e,_int0d,_int20,_putch
 irqback:
 	mov al,0x20
 	out 0x20,al
@@ -27,42 +28,66 @@ _out8:
 	ret
 _int0e_asm:
 	pushad
+	
 	mov ax,8
 	mov ds,ax
-	mov eax,[esp+36]
-	mov ebx,[esp+32]
-	mov ss,ax
-	push eax
-	mov eax,cr2
-	push eax
-	call _int0e
-	add esp,12
-	popad
-	add esp,4
-	.fin:
-	;hlt
-	;jmp .fin
-	;hlt
-	iretd
-_int0d_asm:
-	pushad
-	mov ax,8
-	mov ds,ax
+	mov es,ax
+	
 	mov ebx,[esp+40]
 	mov ecx,[esp+36]
 	mov edx,[esp+32]
+	
 	mov ss,ax
+	add esp,0x00400000
+	
+	push ebx
+	push ecx
+	push edx
+	mov eax,cr2
+	push eax
+	call _int0d
+	add esp,16
+	
+	popad
+	
+	mov esp,[4096+44]
+	
+	ret
+_int0d_asm:
+	pushad
+	push ds
+	push es
+	
+	mov ax,8
+	mov ds,ax
+	mov es,ax
+	
+	mov ebx,[esp+48]
+	mov ecx,[esp+44]
+	mov edx,[esp+40]
+	
+	mov ss,ax
+	add esp,0x00400000
+	
 	push ebx
 	push ecx
 	push edx
 	call _int0d
+	add esp,12
+	
+	sub esp,0x00400000
+	mov ss,[4096+12]
+	mov ebp,[4096+44]
+	
+	pop es
+	pop ds
+	
+	mov [esp+8],ebp
 	popad
-	add esp,4
-	.fin:
-	;hlt
-	;jmp .fin
-	;hlt
-	iretd
+	
+	mov esp,ebp
+	
+	retf
 _cpuid:
 	push edi
 	push ebx
@@ -102,12 +127,16 @@ _restart:		;0
 	mov dword [esp+48],.ret;
 	mov ax,8
 	mov ds,ax
+	mov eax,cr3
+	mov [ebx+8],eax
 	mov [ebx+4],ss
 	mov [ebx],esp
 	add esp,60		;esp+4+20+32+12
 	mov ebx,[esp+8]
 	mov esp,[ebx]
 	mov ss,[ebx+4]
+	mov eax,[ebx+8]
+	mov cr3,eax
 	pop ds
 	pop es
 	pop fs
@@ -146,21 +175,34 @@ _farcall:
 	ret
 _app_startup_asm:
 	pushad
+	
 	mov ebx,[esp+36]	;&app
 	mov edi,[esp+40]	;argc
+	
 	mov [ebx+16],esp
 	mov [ebx+20],ss
 	mov esp,[ebx+8]
 	mov ss,[ebx+12]
+	
 	mov edx,[ebx]
 	mov ecx,[ebx+4]
-	push eax
-	mov ax,[ebx+12]
-	mov ds,ax
+	
+	mov ax,ss
+	mov si,ax
 	mov es,ax
 	mov fs,ax
 	mov gs,ax
-	pop eax
+	
+	mov eax,esp
+	sub eax,24
+	mov [ebx+44],eax
+	
+	mov eax,[ebx+32]
+	mov cr3,eax
+	
+	mov ax,si
+	mov ds,ax
+	
 	push ecx
 	push edx
 	push ebx
@@ -169,15 +211,20 @@ _app_startup_asm:
 	add esp,4
 	pop ebx
 	add esp,8
+	
 	mov eax,8
 	mov ds,ax
 	mov es,ax
 	mov fs,ax
 	mov gs,ax
+	
+	mov eax,0x8000
+	mov cr3,eax
+	
 	mov esp,[ebx+16]
 	mov ss,[ebx+20]
+	
 	popad
-	mov ax,ds
 	ret
 _destart:
 	mov ax,8
@@ -185,6 +232,8 @@ _destart:
 	mov ebx,[esp+4]
 	mov esp,[ebx]
 	mov ss,[ebx+4]
+	mov eax,[ebx+8]
+	mov cr3,eax
 	pop ds
 	pop es
 	pop fs
@@ -192,4 +241,12 @@ _destart:
 	popad
 	iretd
 	.ret:
+	ret
+_cr3_kernel:
+	mov eax,0x8000
+	mov cr3,eax
+	ret
+_cr3_user:
+	mov eax,[esp+4]
+	mov cr3,eax
 	ret

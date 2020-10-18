@@ -2,22 +2,27 @@
 #include "kernel.h"
 int apideliv(int ino,int edi,int esi,int ebp,int esp,int ebx,int edx,int ecx,int eax){
 	__asm__("sti");
+	//while(1);
+	Instance* inst=(Instance*)ebx;
 	if(ino==0x30)int30api();
 	elif(ino==0x31){
-		return int31api(eax,ebx,ecx,edx,esi,edi);
+		return int31api(inst,eax,ebx,ecx,edx,esi,edi);
 	}
 	//elif(ino==0x32)return int32api(eax);
 }
 void int30api(){
 	puts("Int30");
 }
-int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/o
+int int31api(Instance* inst,int eax,int ebx,int ecx,int edx,int esi,int edi){
+	//while(1);
+	int ds=inst->a.ss;
 	Htask task=task_now();
-	int ds=((App*)ebx)->ss;
 	Cache* c=task->c;
 	Descriptor* d=GDT+(ds>>3);
-	int dsbs=(((unsigned char)d->base3)<<24)+(((unsigned char)d->base2)<<16)+((unsigned short)d->base);
+	int dsbsloc=(((unsigned char)d->base3)<<24)+(((unsigned char)d->base2)<<16)+((unsigned short)d->base);
+	int dsbs=inst->dataglob;
 	int dslim=(unsigned int)((d->atrlmt&0xf00)<<8)+(unsigned int)d->limit;
+	//printf(" %x %x %x %x %x\n",eax,ecx,esi,edi,inst);
 	if(eax==1)putch(ecx);
 	elif(eax==2)putint(ecx,8);
 	elif(eax==3)putdec(ecx,8);
@@ -25,24 +30,24 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	elif(eax==5)putdec(ecx,edx);
 	elif(eax==6)putch('\n');
 	elif(eax==7)putch('\r');
-	elif(eax==8)puts("Hello World!");
+	//elif(eax==8)puts("Hello World!");
 	elif(eax==9)return read_cache(c);
 	elif(eax==10)return read_cache_wait(c);
 	elif(eax==11)write_cache(c,ecx);
 	elif(eax==12)write_cache_wait(c,ecx);
-	elif(eax==13)putstr(dsbs+esi);
-	elif(eax==14)puts(dsbs+esi);
+	elif(eax==13)putstr((char*)(dsbs+esi));
+	elif(eax==14)puts((char*)(dsbs+esi));
 	elif(eax==15)curpos.x=curpos.y=curpos.lim=0;
 	elif(eax==16)cls_bg();
 	elif(eax==17){
 		cls_bg();
 		curpos.x=curpos.y=curpos.lim=0;
 	}
-	elif(eax==18){
+	/*elif(eax==18){
 		if(edx!=-1)curpos.x=edx;
 		if(esi!=-1)curpos.y=esi;
 		if(edi!=-1)curpos.lim=edi;
-	}
+	}*/
 	elif(eax==19){
 		while(ecx--){
 			*(char*)(dsbs+(esi++))=read_cache_wait(c);
@@ -59,15 +64,18 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 		int all=0;
 		for(int i=0;i<allocr->size;i++){
 			Freeinfo *f=allocr->root+i;
+			//delay(10);
 			printf("%2d %x %x\n",i,f->addr,f->size);
+			//delay(10);
 			all+=f->size;
 		}
+		//delay(20);
 		printf("Total %dM\nLeft  %dM\n",total>>8,all>>8);
 	}
-	elif(eax==22)return malloc_page(edx);
-	elif(eax==23)push_page(edx,ecx);
+	//elif(eax==22)return (int)malloc_page(edx);
+	//elif(eax==23)push_page((char*)edx,ecx);
 	elif(eax==24){
-		return exec(dsbs+ecx,dsbs+edx,FATHER,WAIT,ALL);
+		return exec((char*)(dsbs+ecx),(char*)(dsbs+edx),FATHER,WAIT,ALL);
 	}
 	elif(eax==25){
 		while(front_cache_wait(c)!=280);
@@ -100,29 +108,29 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 		unexec();
 		pop_cache(c);
 	}
-	elif(eax==29)return (int)find_task(edx);
-	elif(eax==30)return (int)search_task(edx);
-	elif(eax==31)return task_now();
+	//elif(eax==29)return (int)find_task(edx);
+	//elif(eax==30)return (int)search_task(edx);
+	//elif(eax==31)return (int)task_now();
 	elif(eax==32)return fopen(dsbs+esi);
 	elif(eax==33)return filepos(edx);
 	elif(eax==34)write_cache(c,280);
 	elif(eax==35)pop_cache(c);
 	elif(eax==36)return front_cache(c);
 	elif(eax==37)return front_cache_wait(c);
-	elif(eax==38)return push_page(malloc_page(edx),edx);
-	elif(eax==39)return alloc(&gdtaloc,edx);
-	elif(eax==40)set_segmdesc(ecx,edx,esi,edi);
-	elif(eax==41)set_segmdesc(ds>>3,dsbs,dslim+ecx,d->atrlmt&0xf0ff);
+	//elif(eax==38)return push_page(malloc_page(edx),edx);
+	//elif(eax==39)return alloc(&gdtaloc,edx);
+	//elif(eax==40)set_segmdesc(ecx,edx,esi,edi);
+	elif(eax==41)set_segmdesc(ds>>3,dsbsloc,dslim+ecx,d->atrlmt&0xf0ff);
 	elif(eax==42){
 		int adr=malloc_page(ecx);
 		int adrlin=push_page(adr,ecx);
-		set_segmdesc(ds>>3,dsbs,dslim+ecx,d->atrlmt&0xf0ff);
+		set_segmdesc(ds>>3,dsbsloc,dslim+ecx,d->atrlmt&0xf0ff);
 		return adrlin-dsbs;
 	}
 	elif(eax==43){
 		int adr=(edx+dsbs)>>12;
 		int size=ecx;
-		set_segmdesc(ds>>3,dsbs,dslim-ecx,d->atrlmt&0xf0ff);
+		set_segmdesc(ds>>3,dsbsloc,dslim-ecx,d->atrlmt&0xf0ff);
 		int lin=pop_page(ecx);
 		free_page(lin>>12,ecx);
 	}
@@ -148,5 +156,21 @@ int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi){	//basic common i/
 	elif(eax==50)write_cache_wait(dsbs+edx,ecx);
 	elif(eax==51)return read_cache_wait(dsbs+edx);
 	elif(eax==52)return front_cache_wait(dsbs+edx);
+	elif(eax==53){
+		char* ptr=dsbs+edi;
+		while(ecx--)*(ptr++)=read_cache(dsbs+edx);
+	}
+	elif(eax==54){
+		char* ptr=dsbs+esi;
+		while(ecx--)write_cache(dsbs+edx,*(ptr++));
+	}
+	elif(eax==55){
+		for(int i=0;i<fs.filecnt;i++){
+			StaticFile* f=fs.start+i;
+			printf("%2x %x %x ",f->flag,f->pos,f->len);
+			puts(f->name);
+		}
+		printf("Total %d files\n",fs.filecnt);
+	}
 	return 0;
 }

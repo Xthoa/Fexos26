@@ -21,40 +21,57 @@ _int30_asm:
 	iretd
 extern _delay
 _int31_asm:
-	;push 16
-	;call _delay
-	;add esp,4
-	push ebx
-	mov ebx,[8]
 	push ds
 	push es
+	push ebx
+	
 	push eax
-	mov ax,8
+	mov eax,8
 	mov ds,ax
 	mov es,ax
 	pop eax
-	mov [ebx+8],esp
-	mov [ebx+12],ss
-	mov esp,[ebx+16]
-	mov ss,[ebx+20]
-	push ebx
+	
+	mov [4096+8],esp
+	mov [4096+12],ss
+	mov esp,[4096+16]
+	mov ss,[4096+20]
+	
+	mov ebx,cr3
+	mov [4096+32],ebx
+	
+	mov ebx,[4096+36]
+	mov ebp,ebx
+	
+	mov ebx,0x8000
+	mov cr3,ebx
+	
+	mov ebx,ebp
+	
 	pushad
 	sub esp,0x20
+	
 	pushad
 	push 0x31
 	call _apideliv
 	add esp,36
+	
 	add esp,0x20
 	mov [esp+28],eax
 	popad
+	
+	mov ebp,ebx
+	
+	mov ebx,[ebx+32]
+	mov cr3,ebx
+	
+	mov [4096+16],esp
+	mov [4096+20],ss
+	mov esp,[4096+8]
+	mov ss,[4096+12]
+	
 	pop ebx
-	mov [ebx+16],esp
-	mov [ebx+20],ss
-	mov esp,[ebx+8]
-	mov ss,[ebx+12]
 	pop es
 	pop ds
-	pop ebx
 	iretd
 
 extern _interrdeliv

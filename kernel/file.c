@@ -5,7 +5,6 @@ void init_fs(){
 	char* base=(char*)0xf000;	//sector 33
 	fs.filecnt=*(int*)base;
 	fs.start=base+32;
-	//printf("%x %x %x\n",base,fs.filecnt,fs.start);
 } 
 StaticFile* fopen(char* name){
 	for(int i=0;i<fs.filecnt;i++){

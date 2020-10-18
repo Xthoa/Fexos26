@@ -15,12 +15,12 @@ void interrdeliv(int no,int code,int eip,int cs,int eflags){
 	//while(1)hlt();
 }
 void int0e(int cr2,int code,int eip,int cs){
-	putstr("#PF ");
-	printf("code=%x cr2=%x pc=%x_%x\n",code,cr2,cs,eip);
+	putstr("Page Fault ");
+	printf("code=%x cr2=%x pc=%x_%x (Core Dumped)\n",code,cr2,cs,eip);
 	//while(1)hlt();
 }
 void int0d(int code,int eip,int cs){
-	putstr("#GP ");
-	printf("code=%x pc=%x_%x\n",code,cs,eip);
+	putstr("Segment Fault ");
+	printf("code=%x pc=%x_%x (Core Dumped)\n",code,cs,eip);
 	//while(1)hlt();
 }

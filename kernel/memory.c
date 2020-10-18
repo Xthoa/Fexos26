@@ -5,11 +5,12 @@ void init_allocator(){
 	int all=0,i;
 	ARDS *ards=(ARDS*)0x510;
 	allocr=(Allocator*)0x2000;
+	memset(0x2000,0,0x1000);
 	allocr->root=0x200c; 
-	allocr->size=1;
+	allocr->size=0;
 	allocr->max=398;
-	Freeinfo* f=((Freeinfo*)0x200c);
-	f->addr=f->size=0;
+	//Freeinfo* f=((Freeinfo*)0x200c);
+	//f->addr=f->size=0;
 	for(i=0;i<(*(short*)0x502);i++){
 		int tp=ards[i].type;
 		//printf("%2d %6x %6x %4x\n",i,(int)ards[i].base/4096,(int)ards[i].len/4096,tp);
@@ -21,19 +22,15 @@ void init_allocator(){
 			//printf("%6x %6x\n",f->addr,f->size);
 		}
 	}
-	f=((Freeinfo*)0x200c)+(allocr->size++);
-	f->addr=0xffffffff;
-	f->size=1;
+	//f=((Freeinfo*)0x200c)+(allocr->size++);
+	//f->addr=0xffffffff;
+	//f->size=1;
 	//printf("%8x\n",all);
 	bootinfo->os_usable_pages=all;
 }
 void* alloc(Allocator* alocr,int pages){
-	//printf("r2 %x %x %x\n",alocr,pages,alocr->size);
-	//delay(6);
 	for(int i=0;i<alocr->size;i++){
 		Freeinfo* f=&(alocr->root[i]);
-		//printf("r3 %x %x %x\n",f,f->addr,f->size);
-		//delay(6);
 		if(f->size==pages){
 			memcpy(f,f+1,(alocr->size-(f-alocr->root))*sizeof(f));
 			alocr->size--;
@@ -49,46 +46,56 @@ void* alloc(Allocator* alocr,int pages){
 	return NULL;
 }
 void afree(Allocator* alocr,int mem,int pages){
-	//printf("r0 %x %x %x %x\n",alocr,mem,pages,alocr->size);
-	//delay(16);
-	//dispmem();
-	//delay(16);
-	for(int i=1;i<alocr->size;i++){
+	int n=0,len;
+	for(int i=0;i<alocr->size;i++){
 		Freeinfo* f=&(alocr->root[i]);
-		//printf("r1 %x %x %x %x\n",f,f->addr,f->size,alocr->size);
-		//delay(16);
-		int front=(f-1)->addr+(f-1)->size;
-		int end=f->addr-pages;
-		if(front==mem){
-			if(end==mem){
-				(f-1)->size+=(pages+f->size);
-				int len=(alocr->size-(f-alocr->root)-1)*sizeof(Freeinfo);
-				memmove(f,f+1,len);
-				//printf("r1.2 %x %x %x %x %x %x\n",f+1,f,len,alocr->size,f->addr,f->size);
-				alocr->size--;
-			}
-			elif(end>mem){
-				f->size+=pages;
-			}
+		if(f->addr>=mem+pages){
+			len=alocr->size-i;
+			memmove(f+1,f,len*sizeof(Freeinfo));
+			f->addr=mem;
+			f->size=pages;
+			n=i;
+			alocr->size++;
+			break;
 		}
-		elif(front<mem){
-			if(end==mem){
-				f->addr-=pages,f->size+=pages;
-			}
-			elif(end>mem){
-				int len=(alocr->size-(f-alocr->root))*sizeof(Freeinfo);
-				memmove(f+1,f,len);
-				//printf("r1.1 %x %x %x %x %x %x\n",f+1,f,len,alocr->size,f->addr,f->size);
-				f->addr=mem;
-				f->size=pages;
-				alocr->size++;
-			}
-		}
-		//printf("%x %x %x\n",f,f->addr,f->size);
 	}
-	//dispmem();
-	//delay(18);
-	//printf("r exits\n");
+	Freeinfo* front=&(alocr->root[n-1]);
+	Freeinfo* self=&(alocr->root[n]);
+	Freeinfo* end=&(alocr->root[n+1]);
+	int raf,rae;
+	raf=front->addr+front->size==mem;
+	rae=end->addr==mem+pages;
+	if(n==0)raf=False;
+	elif(n==alocr->size-1)rae=False;
+	//printf("%x %x %x %x %x %x %x %x\n",front,self,end,alocr->size,raf,rae,mem,pages);
+	//delay(25);
+	if(raf){
+		if(rae)goto rfe;
+		else goto rf;
+	}
+	else{
+		if(rae)goto re;
+		else return;
+	}
+	return;
+	rf:
+		front->size+=pages;
+		len=alocr->size-n-1;
+		memmove(self,end,len*sizeof(Freeinfo));
+		alocr->size--;
+		return;
+	re:
+		self->size+=end->size;
+		len=alocr->size-n-2;
+		memmove(end,end+1,len*sizeof(Freeinfo));
+		alocr->size--;
+		return;
+	rfe:
+		front->size+=(pages+end->size);
+		len=alocr->size-2;
+		memmove(self,end+1,len*sizeof(Freeinfo));
+		alocr->size-=2;
+		return;
 }
 void* malloc(int size){
 	return (void*)(malloc_page((size+0xfff)>>12));
@@ -153,7 +160,7 @@ void disable_page(int base,int pages){
 	/*dispmem();
 	printf("r5 %x %x %x %x\n",base,pages,allocr->size,allocr->root);
 	delay(12);*/
-	for(int i=1;i<allocr->size;i++){
+	for(int i=0;i<allocr->size;i++){
 		Freeinfo* f=&(allocr->root[i]);
 		//printf("r4 %x %x %x\n",f,f->addr,f->size);
 		//delay(12);

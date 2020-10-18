@@ -32,7 +32,7 @@
 #define GREEN 0x03e0
 #define RED 0x7800
 #define GREY 0x7bef
-#define SILVER 0xbdf7
+#define SILVER 0xc618
 #define LIGHTB 0x0010
 #define LIGHTG 0x0400
 #define LIGHTR 0x8000
@@ -102,7 +102,7 @@ typedef struct _FIFO{
 	volatile int read,write;
 	int* buf;
 	int flag;
-} Buffer,Cache,Fifo,Pipe,File;
+} Buffer,Cache,Fifo,Pipe,File,DynamicFile;
 typedef struct _REGS{
 	int ds,es,fs,gs;
 	int edi,esi,ebp,esp,ebx,edx,ecx,eax;
@@ -111,6 +111,7 @@ typedef struct _REGS{
 typedef struct _TCB{
 	REGS* regs;
 	int ss;
+	int cr3;
 	int acs,key;
 	int tid,sel,flag;
 	int* pte;
@@ -181,7 +182,7 @@ typedef struct _PROG{
 	int esp,ss;
 	int sesp,sss;
 	int acs,key;
-} App,Program,Instance;
+} App,Program;
 typedef struct __CURPOS{
 	int x;
 	int y;
@@ -202,6 +203,21 @@ typedef struct __GDTR{
 	Word len;
 	Dword base;
 } _Gdtr;
+typedef struct _INST{
+	App a;
+	int cr3;
+	struct _INST* self;
+	char *dataglob;
+	int startesp;
+	char *cmdline_loc;
+	struct PageMap{
+		int pde,pdelin,pte0,pte0lin,pte1,pte1lin;
+	};
+	struct PageMap pm;
+} Instance;
+typedef struct _INSTEX{
+	char cmdline[64];
+} InstanceEx;
 
 extern Cache* kbdcac;
 extern Allocator* allocr;
@@ -232,7 +248,7 @@ void restart(Htask a,Htask b);
 void delay(int time);
 void write_cr3(int cr3);
 int strcmp(char* dst,char* src);
-void app_startup_asm(App* a,int argc);
+void app_startup_asm(Instance* a,int argc);
 void destart(Htask t);
 
 void interr00();
@@ -267,7 +283,7 @@ void init_pit();
 char* push_page(char* raw,int pages);
 char* pop_page(int pages);
 char* global_page(char* raw,int start,int pages);
-char* local_page(int* pde,int* pte,char* raw,int pte_n,int start,int pages);
+char* local_page(int* pde,int ptephy,int* pte,char* raw,int pte_n,int start,int pages);
 void set_segmdesc(int no,int base,int limit,int attr);
 void app_startup(char* name,char* args,Htask father,AppOption ao);
 
@@ -312,12 +328,19 @@ void disable_page(int base,int pages);
 Htask search_task(int tid);
 Htask find_task(int tid);
 void schedule();
+int exec(char* fname,char* args,int incac,int waits,int io);
+void unexec();
 
 int apideliv(int ino,int edi,int esi,int ebp,int esp,int ebx,int edx,int ecx,int eax);
 void int30api();
-int int31api(int eax,int ebx,int ecx,int edx,int esi,int edi);
+int int31api(Instance* inst,int eax,int ebx,int ecx,int edx,int esi,int edi);
 void int30_asm();
 void int31_asm();
+
+void error(int x);
+void interrdeliv(int no,int code,int eip,int cs,int eflags);
+void int0d(int code,int eip,int cs);
+void int0e(int cr2,int code,int eip,int cs);
 
 void init_fs();
 StaticFile* fopen(char* name);

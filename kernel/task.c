@@ -16,6 +16,7 @@ Htask create_task_0(){
 	t->name="System";
 	t->sel=16;
 	t->pte=PTE;
+	t->cr3=PDE;
 	return t;
 }
 Htask create_task(char* name){
@@ -32,6 +33,7 @@ Htask create_task(char* name){
 			*(int*)(PDE+i*4)=(int)p+PDE_TAB;
 			//printf("T0 %x %x %x %x\n",t,i,(int)(PDE+i*4),*(int*)(PDE+i*4));
 			t->pte=p;
+			t->cr3=PDE;
 			return t;
 		}
 	}
@@ -132,26 +134,16 @@ int exec(char* fname,char* args,int incac,int waits,int io){
 	int i;
 	Htask t;
 	int stack,stack_lin,esp;
-	//puts(args);
-	//puts(fname);
 	StaticFile* f;
 	if((f=fopen(fname))==NULL){
 		strcat(fname,".fex");
-		//puts(fname);
 		if((f=fopen(fname))==NULL)
 			return -1;
 	}
-	//printf("%x\n",f);
-	//delay(20);
 	fclose(f);
 	t=create_task(fname);
 	stack=malloc_page(4);
-	//printf("%x\n",stack);
-	//delay(40);
 	stack_lin=push_page(stack,4);
-	//printf("%x\n",stack_lin);
-	//putch('P');
-	//delay(40);
 	esp=stack_lin+4*PAGE_SIZE-28;
 	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
 	*(char**)(esp+4)=fname;
@@ -160,7 +152,6 @@ int exec(char* fname,char* args,int incac,int waits,int io){
 	AppOption ao={incac,waits,io};
 	*(AppOption*)(esp+16)=ao;
 	task_ready(t);
-	//printf("f4 %x %x\n",fname,esp);
 	return t->tid;
 }
 void unexec(){

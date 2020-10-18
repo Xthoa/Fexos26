@@ -61,8 +61,9 @@ void entry(){
 	fifo_init(&cac,buf,64);
 	kbdcac=&cac;
 	Cache out;
-	int buf2[256];
-	fifo_init(&out,buf2,256);
+	int *buf2;
+	buf2=0x3000;
+	fifo_init(&out,buf2,4096);
 	stdout=&out;
 	//4.init memory
 	init_allocator();
@@ -104,7 +105,7 @@ void entry(){
 	task_init(app,manager);
 	init_pit();
 	enable_pic(0xff78);
-	puts("Welcome to Fexos 2.0");
+	puts("Welcome to Fexos 2.1");
 	task_ready(app);
 	while(1){
 		if(fifo_size(&cac)>0){
@@ -142,7 +143,7 @@ void entry(){
 		}
 		hlt();
 	}
-	puts("Fexos 2.0 Exiting...");
+	puts("Fexos 2.1 Exiting...");
 	enable_pic(0xffff);
 	return;
 }
@@ -217,9 +218,81 @@ void app_startup(char* name,char* args,Htask father,AppOption ao){
 			error(3);
 	}*/
 	int ss=*(p++);
-	int bss=*(p++);
+	int bss=(*(p++))/*+1*/;
 	int entry=*(p++);
-	App a;
+	
+	int pdepte=malloc_page(3);
+	int pde=pdepte,pte0=pdepte+4096,pte1=pdepte+8192;
+	
+	int *pdelin=push_page(pde,1),*pte0lin=push_page(pte0,1),*pte1lin=push_page(pte1,1);
+	
+	int data=malloc_page(ss+bss);
+	int *datalin_krnl=push_page(data,ss+bss);
+	InstanceEx* instex=(char*)datalin_krnl+PAGE_SIZE*(ss+bss-1);
+	
+	int *datalin=local_page(pdelin,pte1,pte1lin,data,1,0,ss+bss);
+	//printf("%x %x %x %x\n",data,datalin_krnl,datalin,instex);
+	
+	memcpy(datalin_krnl+4,p,f->len-16);
+	fclose(f);
+	
+	char* inst_phy=(char*)malloc_page(1);
+	Instance *inst=push_page(inst_phy,1);
+	local_page(pdelin,pte0,pte0lin,inst_phy,0,1,1);
+	inst->cmdline_loc=instex->cmdline;
+	if(args)strcpy(instex->cmdline,args);
+	else instex->cmdline[0]=0;
+	
+	datalin_krnl[0]=0;
+	datalin_krnl[1]=args?(char*)((int)instex->cmdline-(int)datalin_krnl):NULL;
+	datalin_krnl[2]=inst; 
+	
+	//printf("%x %x %x %x %x\n",(int)app_startup_asm&0xfffff000,pdelin,pte0lin,pte1lin);
+	//delay(40);
+	
+	local_page(pdelin,pte0,pte0lin,0x3000,0,0x3,12);
+	local_page(pdelin,pte0,pte0lin,0x100000,0,0x100,7);
+	
+	inst->pm.pde=pde;
+	inst->pm.pdelin=pdelin;
+	inst->pm.pte0=pte0;
+	inst->pm.pte0lin=pte0lin;
+	inst->pm.pte1=pte1;
+	inst->pm.pte1lin=pte1lin;
+	inst->dataglob=datalin_krnl;
+	
+	int sc=(int)alloc(&gdtaloc,2);
+	set_segmdesc(sc,0x00400000,(ss+bss)*PAGE_SIZE-1,SEG_CODE);
+	set_segmdesc(sc+1,0x00400000,(ss+bss)*PAGE_SIZE-1,SEG_DATA);
+	
+	inst->a.cs=sc*8;
+	inst->a.eip=entry+0x10;
+	self->ss=inst->a.ss=(sc+1)*8;
+	inst->a.esp=(ss+bss)*PAGE_SIZE-8;	//reserve space of 2 arg
+	inst->cr3=pde;
+	inst->self=inst;
+	
+	self->cr3=pde;
+	app_startup_asm(inst,2);
+	self->cr3=PDE;
+	
+	afree(&gdtaloc,sc,2);
+	
+	pop_page(1);
+	free_page((int)inst_phy>>12,1);
+	
+	pop_page(ss+bss);
+	free_page(data>>12,ss+bss);
+	
+	pop_page(3);
+	free_page(pdepte>>12,3);
+	
+	free_page((int)self->pte>>12,1);
+	write_cache(self->c,280);
+	task_delete(self);
+	
+	while(1);
+	/*App a;
 	int stack=malloc_page(ss+bss);
 	//delay(40);
 	int *stack_lin=push_page(stack,ss+bss);
@@ -253,6 +326,6 @@ void app_startup(char* name,char* args,Htask father,AppOption ao){
 	//dispalocr(&gdtaloc);
 	free_page((int)self->pte>>12,1);
 	write_cache(self->c,280);
-	task_delete(self);
+	task_delete(self);*/
 	//while(1);
 } 
