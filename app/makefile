@@ -1,8 +1,9 @@
 default : shell.fex \
 		echo.fex cls.fex mem.fex \
-		test.fex run.fex
+		test.fex run.fex dir.fex \
+		cpptest.fex
 
 include appmake.txt
 
 clean:
-	rm *.o *.b *.bin *.fex
+	rm *.co *.cp *.b *.bin *.fex

@@ -1,8 +1,18 @@
 libs = ../api/std.lib ../api/fexos.lib ../api/string.lib
 header = fexos.h macro.h
 
-%.fex: %.c $(header) $(libs) fex.lds makefile
-	gcc -c -m32 -O2 -std=c11 $*.c -o $*.o
-	gld --gc-sections $*.o $(libs) -o $*.b -T fex.lds
+%.co: %.c $(header) makefile
+	gcc -c -m32 -O2 -std=c11 -w $*.c -o $*.co
+
+%.cp: %.cpp $(header) makefile
+	g++ -c -m32 -O2 -std=c++11 $*.cpp -o $*.cp
+
+%.fex: %.co $(libs) fex.lds makefile
+	gld --gc-sections $*.co $(libs) -o $*.b -T fex.lds
+	objcopy -O binary -j .text -j .rdata $*.b $*.bin
+	../mkexe -i $*.bin -o $*.fex -d 16 -b 0 -e 0
+
+%.fex: %.cp $(header) $(libs) fex.lds makefile
+	gld --gc-sections $*.cp $(libs) -o $*.b -T fex.lds
 	objcopy -O binary -j .text -j .rdata $*.b $*.bin
 	../mkexe -i $*.bin -o $*.fex -d 16 -b 0 -e 0

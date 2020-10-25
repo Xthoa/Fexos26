@@ -1,0 +1,1 @@
+rename kernel\system.font system.font 0

@@ -2,8 +2,10 @@
 global _int21_asm,_hlt,_out8,_int20_asm,_restart
 global _int0e_asm,_int0d_asm,_cpuid,_memset,_read_cr3
 global _read_eflags,_delay,_farcall,_destart,_app_startup_asm
-global _cr3_kernel,_cr3_user
+global _cr3_kernel,_cr3_user,_int0b_asm,_int0c_asm
+global _int00_asm
 extern _int21,_int3,_int0e,_int0d,_int20,_putch
+extern _int0b,_int0c,_int00
 irqback:
 	mov al,0x20
 	out 0x20,al
@@ -28,14 +30,16 @@ _out8:
 	ret
 _int0e_asm:
 	pushad
+	push ds
+	push es
 	
 	mov ax,8
 	mov ds,ax
 	mov es,ax
 	
-	mov ebx,[esp+40]
-	mov ecx,[esp+36]
-	mov edx,[esp+32]
+	mov ebx,[esp+48]
+	mov ecx,[esp+44]
+	mov edx,[esp+40]
 	
 	mov ss,ax
 	add esp,0x00400000
@@ -48,11 +52,19 @@ _int0e_asm:
 	call _int0d
 	add esp,16
 	
+	sub esp,0x00400000
+	mov ss,[4096+12]
+	mov ebp,[4096+44]
+	
+	pop es
+	pop ds
+	
+	mov [esp+8],ebp
 	popad
 	
-	mov esp,[4096+44]
+	mov esp,ebp
 	
-	ret
+	retf
 _int0d_asm:
 	pushad
 	push ds
@@ -87,6 +99,102 @@ _int0d_asm:
 	
 	mov esp,ebp
 	
+	retf
+_int0b_asm:
+	pushad
+	push ds
+	push es
+	
+	mov ax,8
+	mov ds,ax
+	mov es,ax
+	
+	mov ebx,[esp+48]
+	mov ecx,[esp+44]
+	mov edx,[esp+40]
+	
+	mov ss,ax
+	add esp,0x00400000
+	
+	push ebx
+	push ecx
+	push edx
+	call _int0b
+	add esp,12
+	
+	sub esp,0x00400000
+	mov ss,[4096+12]
+	mov ebp,[4096+44]
+	
+	pop es
+	pop ds
+	
+	mov [esp+8],ebp
+	popad
+	
+	mov esp,ebp
+	
+	retf
+_int0c_asm:
+	pushad
+	push ds
+	push es
+	
+	mov ax,8
+	mov ds,ax
+	mov es,ax
+	
+	mov ebx,[esp+48]
+	mov ecx,[esp+44]
+	mov edx,[esp+40]
+	
+	mov ss,ax
+	add esp,0x00400000
+	
+	push ss
+	push esp
+	push ebx
+	push ecx
+	push edx
+	call _int0c
+	add esp,18
+	
+	sub esp,0x00400000
+	mov ss,[4096+12]
+	mov ebp,[4096+44]
+	
+	pop es
+	pop ds
+	
+	mov [esp+8],ebp
+	popad
+	
+	mov esp,ebp
+	
+	retf
+_int00_asm:
+	pushad
+	push ds
+	push es
+	mov ax,8
+	mov ds,ax
+	mov es,ax
+	mov ecx,[esp+44]
+	mov edx,[esp+40]
+	mov ss,ax
+	add esp,0x00400000
+	push ecx
+	push edx
+	call _int00
+	add esp,8
+	sub esp,0x00400000
+	mov ss,[4096+12]
+	mov ebp,[4096+44]
+	pop es
+	pop ds
+	mov [esp+8],ebp
+	popad
+	mov esp,ebp
 	retf
 _cpuid:
 	push edi

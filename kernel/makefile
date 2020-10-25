@@ -3,8 +3,8 @@ objs = start.o memory.o task.o io.o cache.o intapi.o file.o desc.o \
 
 default: start.bin system.font
 
-%.o: %.c makefile kernel.h
-	gcc -c -m32 -O1 -std=c11 $*.c -o $*.o
+%.o: %.c makefile kernel.h funcs.h macro.h
+	gcc -c -m32 -O1 -std=c11 -w $*.c -o $*.o
 
 %.obj: %.asm makefile
 	nasm $*.asm -o $*.obj -f elf32
@@ -19,4 +19,4 @@ system.font: system.font.txt makefile
 	../makefont system.font.txt system.font
 
 clean:
-	rm *.o *.b *.obj *.bin
+	rm *.o *.b *.obj *.bin system.font

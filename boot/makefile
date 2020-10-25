@@ -1,5 +1,8 @@
 default: boot.bin loader.bin
 
+cd: cdboot.asm
+	nasm cdboot.asm -o cdboot.bin -f bin
+
 boot.bin: boot.asm rmio.inc makefile
 	nasm boot.asm -o boot.bin -f bin
 

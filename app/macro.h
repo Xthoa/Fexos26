@@ -32,3 +32,9 @@ typedef struct _FIFO{
 	int* buf;
 	int flag;
 } Buffer,Cache,Fifo,Pipe,File;
+typedef struct _StaticFILE{
+	char flag;
+	char name[23];
+	int len;
+	int pos;
+} StaticFile,FileInfo;

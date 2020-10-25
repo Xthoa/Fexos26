@@ -1,10 +1,9 @@
 #include "fexos.h"
 int start(int argc,char** argv){
-	putchar('T');
 	File f;
-	open("test.txt",&f);
-	int ch=getc(&f);
-	printf("%2x\n",ch);
-	close(&f);
+	create("rtfs/t.txt",0,4);
+	open("rtfs/t.txt",&f);
+	printf("%x %x %x %x %x\n",f.flag,f.len,f.buf,f.read,f.write);
+	close(&f); 
 	return 0;
 }

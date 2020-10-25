@@ -20,7 +20,22 @@ void int0e(int cr2,int code,int eip,int cs){
 	//while(1)hlt();
 }
 void int0d(int code,int eip,int cs){
-	putstr("Segment Fault ");
+	putstr("General Protection ");
 	printf("code=%x pc=%x_%x (Core Dumped)\n",code,cs,eip);
+	//while(1)hlt();
+}
+void int0c(int code,int eip,int cs,int esp,short ss){
+	putstr("Stack Fault ");
+	printf("code=%x pc=%x_%x stack=%x_%x (Core Dumped)\n",code,cs,eip,ss,esp);
+	//while(1)hlt();
+}
+void int0b(int code,int eip,int cs){
+	putstr("Segment Not present ");
+	printf("code=%x pc=%x_%x (Core Dumped)\n",code,cs,eip);
+	//while(1)hlt();
+}
+void int00(int eip,int cs){
+	putstr("Zero Division ");
+	printf("pc=%x_%x (Core Dumped)\n",cs,eip);
 	//while(1)hlt();
 }

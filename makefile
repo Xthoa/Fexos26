@@ -8,6 +8,9 @@ need = rule.txt fsrule.txt kernel\system.font.txt
 default:
 	make img
 
+install:
+	run.exe "fexos.img 180"
+
 debug: 
 	make img
 	bochsdbg -f bochsrc.bxrc
@@ -28,10 +31,11 @@ img:
 	make fexos.img
 
 fexos.img: $(boot) $(kernel) $(app) $(need) makefile
-	fexfs2 fsrule.txt fs.bin
+	fexfs2 fsrule.txt fs.bin 73728 4 73728
 	imager rule.txt fexos.img
 
 clean:
+	rm fs.bin tmp.bin
 	make -C boot clean
 	make -C kernel clean
 	make -C api clean

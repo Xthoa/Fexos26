@@ -18,7 +18,6 @@ readloop:
 		MOV		AH,0x02			; AH=0x02 : ディスク読み込み
 		MOV		AL,1			; 1セクタ
 		MOV		BX,0
-		MOV		DL,0x00	
 ;add word [0x504],1
 int 13h
 jc err

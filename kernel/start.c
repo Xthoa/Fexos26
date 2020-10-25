@@ -2,29 +2,6 @@
 Bool kbd_flag;	//0 !insert ctrl alt caps !num shift e0
 Allocator gdtaloc;
 _Gdtr gdtr;
-void init_idt(){
-	set_gatedesc(0x00,(int)interr00	,16,0,GATE_INT);
-	set_gatedesc(0x01,(int)interr01	,16,0,GATE_INT);
-	set_gatedesc(0x03,(int)interr03	,16,0,GATE_INT);
-	set_gatedesc(0x04,(int)interr04	,16,0,GATE_INT);
-	set_gatedesc(0x05,(int)interr05	,16,0,GATE_INT);
-	set_gatedesc(0x06,(int)interr06	,16,0,GATE_INT);
-	set_gatedesc(0x07,(int)interr07	,16,0,GATE_INT);
-	set_gatedesc(0x08,(int)interr08	,16,0,GATE_INT);
-	set_gatedesc(0x0a,(int)interr0a	,16,0,GATE_INT);
-	set_gatedesc(0x0b,(int)interr0b	,16,0,GATE_INT);
-	set_gatedesc(0x0c,(int)interr0c	,16,0,GATE_INT);
-	set_gatedesc(0x0d,(int)int0d_asm,16,0,GATE_INT);
-	set_gatedesc(0x0e,(int)int0e_asm,16,0,GATE_INT);
-	set_gatedesc(0x10,(int)interr10	,16,0,GATE_INT);
-	set_gatedesc(0x11,(int)interr11	,16,0,GATE_INT);
-	set_gatedesc(0x12,(int)interr12	,16,0,GATE_INT);
-	set_gatedesc(0x13,(int)interr13	,16,0,GATE_INT);
-	set_gatedesc(0x20,(int)int20_asm,16,0,GATE_INT);
-	set_gatedesc(0x21,(int)int21_asm,16,0,GATE_INT);
-	set_gatedesc(0x30,(int)int30_asm,16,0,GATE_INT);
-	set_gatedesc(0x31,(int)int31_asm,16,0,GATE_INT);
-}
 __attribute__((section(".entry")))
 void entry(){
 	static const char keytabs0[0x59]={
@@ -52,60 +29,42 @@ void entry(){
 		0,0,0,0,0,0,0,KEY_GUI_L,KEY_GUI_R,KEY_APPS,KEY_POWER,KEY_SLEEP,0,0,0,KEY_WAKE
 	};
 	bootinfo=(BootInfo*)0x500;
-	//1.init screen
 	cls_bg();
 	curpos.x=curpos.y=0;
-	//2.init stdin
 	Cache cac;
 	int buf[64];
 	fifo_init(&cac,buf,64);
 	kbdcac=&cac;
 	Cache out;
-	int *buf2;
-	buf2=0x3000;
+	int *buf2=0x3000;
 	fifo_init(&out,buf2,4096);
 	stdout=&out;
-	//4.init memory
 	init_allocator();
 	disable_page(0,0x100);		//total 1M [0x100 Pages] for kernel
-	//5.set idt
 	init_idt();
-	gdtr.base=0xa000;
-	gdtr.len=1023;
-	__asm__("lgdt %0":"=g"(gdtr));
-	gdtaloc.root=malloc_page(2);
-	gdtaloc.size=1;
-	gdtaloc.max=128;
-	Freeinfo* f=gdtaloc.root;
-	f->addr=5;
-	f->size=123;
+	init_gdt();
 	cpuids();
-	init_fs();
 	init_mt();
 	Htask sys=create_task_0();
 	task_ready(sys);
-	//delay(100);
+	init_sbh();
+	init_fs();
 	scrx=bootinfo->scrx>>3;
 	scry=bootinfo->scry>>4;
-	//delay(100);
 	sysfont=malloc_page(1);
 	sysfont=push_page(sysfont,1);
-	//delay(100);
-	StaticFile* sf=fopen("system.font");
+	StaticFile* sf=fopen("rofs/system/system.font");
 	char* pos=filepos(sf);
-	memcpy(sysfont,pos,4096);
+	//printf("%x\n",pos);
+	memcpy(sysfont,pos,2048);
+	memset(sysfont+2048,0,2048);
 	fclose(sf);
-	//delay(100);
 	bootinfo->vram=push_page(VRAM,bootinfo->scrx*bootinfo->scry/2048);
-	//delay(40);
-	dispchar(0,0,'A',BLACK,WHITE);
-	//delay(40);
-	segcnt=5;
 	Htask app=create_task("Manager");
 	task_init(app,manager);
 	init_pit();
 	enable_pic(0xff78);
-	puts("Welcome to Fexos 2.1");
+	puts("Welcome to Fexos 2.2");
 	task_ready(app);
 	while(1){
 		if(fifo_size(&cac)>0){
@@ -143,7 +102,7 @@ void entry(){
 		}
 		hlt();
 	}
-	puts("Fexos 2.1 Exiting...");
+	puts("Fexos 2.2 Exiting...");
 	enable_pic(0xffff);
 	return;
 }
@@ -174,21 +133,23 @@ void manager(){
 	int buf[16];
 	fifo_init(&c,buf,16);
 	task_now()->c=&c;
-	exec("shell.fex",NULL,FATHER,WAIT,ALL);
+	exec("rofs/user/shell.fex",NULL,FATHER,WAIT,ALL,"./");
 	while(1){
 		//if(fifo_size(&c)>0)write_cache(search_task(2)->c,read_cache(&c));
 		//hlt();
 	}
 }
-void app_startup(char* name,char* args,Htask father,AppOption ao){
+void app_startup(char* name,char* args,Htask father,AppOption ao,char* workdir){
 	Htask self=task_now();
 	StaticFile* f=fopen(name);
 	int* p=filepos(f);
 	//printf("f6 %x %x %x %x %x %x\n",f,p,name,args,father,ao.incac);
+	//printf("%x %x\n",f,p);
 	int magic=*(p++);
 	if(magic!=0x78656600){
 		puts("File not executable (0x0000 & 0x0005)");
-		write_cache(self->c,280);
+		write_cache(self->c,MSG_TASK_CHILDFIN);
+		write_cache(self->c,self);
 		task_delete(self);
 		return;
 	}
@@ -247,6 +208,9 @@ void app_startup(char* name,char* args,Htask father,AppOption ao){
 	datalin_krnl[1]=args?(char*)((int)instex->cmdline-(int)datalin_krnl):NULL;
 	datalin_krnl[2]=inst; 
 	
+	inst->workdir=instex->workdir;
+	strcpy(instex->workdir,workdir);
+	
 	//printf("%x %x %x %x %x\n",(int)app_startup_asm&0xfffff000,pdelin,pte0lin,pte1lin);
 	//delay(40);
 	
@@ -288,44 +252,9 @@ void app_startup(char* name,char* args,Htask father,AppOption ao){
 	free_page(pdepte>>12,3);
 	
 	free_page((int)self->pte>>12,1);
-	write_cache(self->c,280);
+	write_cache(self->c,MSG_TASK_CHILDFIN);
+	write_cache(self->c,self);
 	task_delete(self);
 	
 	while(1);
-	/*App a;
-	int stack=malloc_page(ss+bss);
-	//delay(40);
-	int *stack_lin=push_page(stack,ss+bss);
-	//printf("%x %x %x\n",stack,stack_lin,ss+bss);
-	//delay(40);
-	//printf("%x %x %x\n",ss,bss,entry);
-	memcpy(stack_lin+4,p,f->len-16);
-	fclose(f);
-	stack_lin[0]=0;
-	stack_lin[1]=f->len+4;
-	stack_lin[2]=&a;
-	strcpy((char*)((int)stack_lin+f->len+4),args);
-	//if(args)puts(args);
-	//printf("a %x %x %x %x %x %x\n",stack,stack_lin,&a,f->len+4,args,stack_lin+f->len+4);
-	//puts(stack_lin+f->len+4);
-	int sc=(int)alloc(&gdtaloc,2);
-	//printf("g2 %x\n",sc); 
-	//dispalocr(&gdtaloc);
-	set_segmdesc(sc,stack_lin,f->len-13,SEG_CODE);
-	set_segmdesc(sc+1,stack_lin,(ss+bss)*PAGE_SIZE-1,SEG_DATA);
-	a.cs=sc*8;
-	a.eip=entry+16;
-	self->ss=a.ss=(sc+1)*8;
-	a.esp=(ss+bss)*PAGE_SIZE-9;	//reserve space of 2 arg
-	app_startup_asm(&a,2);
-	//printf("%x %x %x %2x %2x\n",father,father->tid,father->c,father->c->read,father->c->write);
-	afree(&gdtaloc,sc,2);
-	int mem=pop_page(ss+bss);
-	//printf("%x\n",mem);
-	free_page(stack>>12,ss+bss);
-	//dispalocr(&gdtaloc);
-	free_page((int)self->pte>>12,1);
-	write_cache(self->c,280);
-	task_delete(self);*/
-	//while(1);
 } 

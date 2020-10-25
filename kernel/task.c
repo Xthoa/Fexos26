@@ -27,12 +27,12 @@ Htask create_task(char* name){
 			t->tid=i;
 			t->name=name;
 			t->sel=16;
-			int p=malloc_page(1);
-			//p=push_page(p,1);
-			memset(p,0,4096);
-			*(int*)(PDE+i*4)=(int)p+PDE_TAB;
+			int phy=malloc_page(1);
+			*(int*)(PDE+i*4)=(int)phy+PDE_TAB;
+			int lin=push_page(phy,1);
+			memset(lin,0,4096);
 			//printf("T0 %x %x %x %x\n",t,i,(int)(PDE+i*4),*(int*)(PDE+i*4));
-			t->pte=p;
+			t->pte=lin;
 			t->cr3=PDE;
 			return t;
 		}
@@ -65,9 +65,6 @@ Htask task_now(){
 }
 Htask find_task(int tid){
 	return tasktab.root+tid;
-}
-Htask search_task(int tid){
-	return tasktab.ready[tid];
 }
 void schedule(){
 	if(tasktab.size>1){
@@ -130,7 +127,7 @@ void task_delete(Htask task){
 		}
 	}
 }
-int exec(char* fname,char* args,int incac,int waits,int io){
+int exec(char* fname,char* args,int incac,int waits,int io,char* workdir){
 	int i;
 	Htask t;
 	int stack,stack_lin,esp;
@@ -140,17 +137,19 @@ int exec(char* fname,char* args,int incac,int waits,int io){
 		if((f=fopen(fname))==NULL)
 			return -1;
 	}
+	//printf("%x\n",f);
 	fclose(f);
 	t=create_task(fname);
 	stack=malloc_page(4);
 	stack_lin=push_page(stack,4);
-	esp=stack_lin+4*PAGE_SIZE-28;
+	esp=stack_lin+4*PAGE_SIZE-32;
 	task_init_ns(t,(int)app_startup,16,8,8,esp,read_eflags());
 	*(char**)(esp+4)=fname;
 	*(char**)(esp+8)=args;
 	*(Htask*)(esp+12)=task_now();
 	AppOption ao={incac,waits,io};
 	*(AppOption*)(esp+16)=ao;
+	*(char**)(esp+28)=workdir;
 	task_ready(t);
 	return t->tid;
 }

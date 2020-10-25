@@ -1,4 +1,7 @@
 //fexos.h
+#ifdef __cplusplus
+extern "C"{
+#endif
 #include "macro.h"
 int putchar(int c);
 int putint(int c);
@@ -9,7 +12,7 @@ int putcr();
 int putlf();
 void hello_world();
 void entry();
-int start();
+int start(int,char**);
 int strcmp(char* dst,char* src);
 void *memcpy(void* dst,void* src,int size);
 void *memmove(void* dst,void* src,int size);
@@ -39,3 +42,21 @@ Htask find_task();
 int puts(const char* str);
 int putstr(const char* str);
 void free_page(int mem,int pages);
+File* open(char* name,File* file);
+void close(File* f);
+char getc(File* f);
+void putc(File* f,char c);
+void read(File* f,char* dst,int maxlen);
+void write(File* f,char* src,int maxlen);
+void show_dirs();
+void chdir(char* path);
+char* get_pwd();
+void list_dirs(StaticFile* root);
+StaticFile* dir_to_file(char* dir);
+void show_cur_dirs();
+StaticFile* create(char* name,int flag,int len);
+void rbdir();
+void oflush();
+#ifdef __cplusplus
+}
+#endif

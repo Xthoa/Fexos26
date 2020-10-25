@@ -61,6 +61,15 @@ char* push_page(char* raw,int pages){
 	}
 	return task->tid*0x00400000+start*0x1000;	//pte_n = tid
 }
+char* push_task_page(Htask task,char* raw,int pages){
+	int i;
+	for(i=0;(task->pte)[i]!=0;i++);
+	int start=i;
+	for(;pages--;i++){
+		task->pte[i]=PTE_4K+raw+(i-start)*4096;
+	}
+	return task->tid*0x00400000+start*0x1000;	//pte_n = tid
+}
 char* local_page(int* pde,int ptephy,int* pte,char* raw,int pte_n,int start,int pages){
 	pde[pte_n]=ptephy+PDE_TAB;
 	for(int i=start;i<pages+start;i++)pte[i]=PTE_4K+raw+(i-start)*4096;
@@ -78,4 +87,37 @@ void set_segmdesc(int no,int base,int limit,int attr){
 	d->atrlmt=((limit>>8)&0xf00)|(attr&0xf0ff);
 	d->base3=(base>>24)&0xff;
 }
-int segcnt;
+void init_idt(){
+	set_gatedesc(0x00,(int)int00_asm,16,0,GATE_INT);
+	set_gatedesc(0x01,(int)interr01	,16,0,GATE_INT);
+	set_gatedesc(0x03,(int)interr03	,16,0,GATE_INT);
+	set_gatedesc(0x04,(int)interr04	,16,0,GATE_INT);
+	set_gatedesc(0x05,(int)interr05	,16,0,GATE_INT);
+	set_gatedesc(0x06,(int)interr06	,16,0,GATE_INT);
+	set_gatedesc(0x07,(int)interr07	,16,0,GATE_INT);
+	set_gatedesc(0x08,(int)interr08	,16,0,GATE_INT);
+	set_gatedesc(0x0a,(int)interr0a	,16,0,GATE_INT);
+	set_gatedesc(0x0b,(int)int0b_asm,16,0,GATE_INT);
+	set_gatedesc(0x0c,(int)int0c_asm,16,0,GATE_INT);
+	set_gatedesc(0x0d,(int)int0d_asm,16,0,GATE_INT);
+	set_gatedesc(0x0e,(int)int0e_asm,16,0,GATE_INT);
+	set_gatedesc(0x10,(int)interr10	,16,0,GATE_INT);
+	set_gatedesc(0x11,(int)interr11	,16,0,GATE_INT);
+	set_gatedesc(0x12,(int)interr12	,16,0,GATE_INT);
+	set_gatedesc(0x13,(int)interr13	,16,0,GATE_INT);
+	set_gatedesc(0x20,(int)int20_asm,16,0,GATE_INT);
+	set_gatedesc(0x21,(int)int21_asm,16,0,GATE_INT);
+	set_gatedesc(0x30,(int)int30_asm,16,0,GATE_INT);
+	set_gatedesc(0x31,(int)int31_asm,16,0,GATE_INT);
+}
+void init_gdt(){
+	gdtr.base=0xa000;
+	gdtr.len=1023;
+	__asm__("lgdt %0":"=g"(gdtr));
+	gdtaloc.root=malloc_page(2);
+	gdtaloc.size=1;
+	gdtaloc.max=128;
+	Freeinfo* f=gdtaloc.root;
+	f->addr=5;
+	f->size=123;
+}

@@ -1,0 +1,10 @@
+rename app\shell.fex shell.fex 0
+rename app\test.fex test.fex 0
+rename app\echo.fex echo.fex 0
+rename app\cls.fex cls.fex 0
+rename app\mem.fex mem.fex 0
+rename app\run.fex run.fex 0
+rename app\test.txt test.txt 0
+rename app\cpptest.fex cpptest.fex 0
+rename app\dir.fex dir.fex 0
+alias ls.fex

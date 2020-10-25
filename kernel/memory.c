@@ -1,6 +1,7 @@
 //memory.c
 #include "kernel.h"
-Allocator* allocr;
+Allocator* allocr;//physical allocation
+Allocator sbh;//physical allocation
 void init_allocator(){
 	int all=0,i;
 	ARDS *ards=(ARDS*)0x510;
@@ -28,6 +29,14 @@ void init_allocator(){
 	//printf("%8x\n",all);
 	bootinfo->os_usable_pages=all;
 }
+void init_sbh(){
+	sbh.root=malloc_page(4);
+	Freeinfo* f=sbh.root;
+	f->addr=push_page(malloc_page(4),4);
+	f->size=PAGE_SIZE*4;
+	sbh.max=PAGE_SIZE*4/sizeof(Freeinfo);
+	sbh.size=1;
+}
 void* alloc(Allocator* alocr,int pages){
 	for(int i=0;i<alocr->size;i++){
 		Freeinfo* f=&(alocr->root[i]);
@@ -44,6 +53,19 @@ void* alloc(Allocator* alocr,int pages){
 		}
 	}
 	return NULL;
+}
+void sbh_resize(){
+	afree(&sbh,push_task_page(find_task(0),malloc_page(4),4),4*PAGE_SIZE);
+}
+void* sbh_alloc(int size){
+	void* ret;
+	while((ret=alloc(&sbh,size))==NULL){
+		sbh_resize();
+	}
+	return ret;
+}
+void sbh_free(int addr,int size){
+	afree(&sbh,addr,size);
 }
 void afree(Allocator* alocr,int mem,int pages){
 	int n=0,len;
@@ -101,9 +123,7 @@ void* malloc(int size){
 	return (void*)(malloc_page((size+0xfff)>>12));
 }
 void* malloc_page(int pages){
-	void* ret=(void*)((int)alloc(allocr,pages)<<12);
-	//dispmem();
-	return ret;
+	return (void*)((int)alloc(allocr,pages)<<12);
 }
 void free(void* addr,int size){
 	free_page((int)(addr+0xfff)>>12,(int)(size+0xfff)>>12);
@@ -142,6 +162,11 @@ char *strcpy(char* d,char* s){
 	while(*s!=0)*(d++)=*(s++);
 	*(d++)=0;
 }
+char *strcat(char* d,char* s){
+	while(*d!=0)d++;
+	while(*s!=0)*(d++)=*(s++);
+	*(d++)=0;
+}
 void dispmem(){
 	dispalocr(allocr);
 }
@@ -157,13 +182,8 @@ void dispalocr(Allocator* alocr){
 	printf("Total: %x\n",all);
 }
 void disable_page(int base,int pages){
-	/*dispmem();
-	printf("r5 %x %x %x %x\n",base,pages,allocr->size,allocr->root);
-	delay(12);*/
 	for(int i=0;i<allocr->size;i++){
 		Freeinfo* f=&(allocr->root[i]);
-		//printf("r4 %x %x %x\n",f,f->addr,f->size);
-		//delay(12);
 		if(f->addr==base){
 			if(f->size<=pages){
 				memcpy(f,f+1,(allocr->size-(f-allocr->root))*sizeof(*f));

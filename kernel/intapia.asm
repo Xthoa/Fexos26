@@ -75,7 +75,6 @@ _int31_asm:
 	iretd
 
 extern _interrdeliv
-global _interr00
 global _interr01
 global _interr03
 global _interr04
@@ -84,21 +83,10 @@ global _interr06
 global _interr07
 global _interr08
 global _interr0a
-global _interr0b
-global _interr0c
 global _interr10
 global _interr11
 global _interr12
 global _interr13
-_interr00:
-	mov eax,8
-	mov ds,ax
-	mov ss,ax
-	push 0x00
-	push 0x00
-	call _interrdeliv
-	add esp,8
-	iretd
 _interr01:
 	mov eax,8
 	mov ds,ax
@@ -168,6 +156,7 @@ _interr08:
 	movsb
 	inc edi
 	loop .loop
+	cli
 	hlt
 	iretd
 abort:
@@ -177,22 +166,6 @@ _interr0a:
 	mov ds,ax
 	mov ss,ax
 	push 0x0a
-	call _interrdeliv
-	add esp,8
-	iretd
-_interr0b:
-	mov eax,8
-	mov ds,ax
-	mov ss,ax
-	push 0x0b
-	call _interrdeliv
-	add esp,8
-	iretd
-_interr0c:
-	mov eax,8
-	mov ds,ax
-	mov ss,ax
-	push 0x0c
 	call _interrdeliv
 	add esp,8
 	iretd

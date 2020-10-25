@@ -16,7 +16,11 @@ void dispchar(int row,int col,char ch,short back,short color){
 }
 Curpos curpos;
 void oputch(char c){
-	if(c=='\n' || c==KEY_PAD_ENTER){
+	if(c==3){
+		curpos.x+=curpos.lim;
+		curpos.y=curpos.lim=0;
+	}
+	elif(c=='\n' || c==KEY_PAD_ENTER){
 		curpos.x=((curpos.x+scrx)/scrx)*scrx;
 		curpos.y=curpos.lim=0;
 		if(curpos.x==scrx*scry){

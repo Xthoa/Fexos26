@@ -1,18 +1,16 @@
-;file file.asm
 bits 32
 section .text
-global _open
-_open:
+global _findfile
+_findfile:
 	push esi
-	mov eax,44
+	mov eax,32
 	mov esi,[esp+8]
-	mov edx,[esp+12]
 	int 0x31
 	pop esi
 	ret
-global _close
-_close:
-	mov eax,49
+global _filepos
+_filepos:
+	mov eax,33
 	mov edx,[esp+4]
 	int 0x31
 	ret
