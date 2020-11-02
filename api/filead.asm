@@ -10,7 +10,9 @@ _findfile:
 	ret
 global _filepos
 _filepos:
+	push edx
 	mov eax,33
-	mov edx,[esp+4]
+	mov edx,[esp+8]
 	int 0x31
+	pop edx
 	ret

@@ -100,7 +100,7 @@ Htask find_task(int tid);
 #define search_task find_task
 #define FindProcess find_task
 void schedule();
-int exec(char* fname,char* args,int incac,int waits,int io,char* workdir);
+Htask exec(char* fname,char* args,int incac,int waits,int io,char* workdir);
 #define ShellExecute exec
 void unexec();
 

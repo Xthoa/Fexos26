@@ -33,17 +33,24 @@ _int0e_asm:
 	push ds
 	push es
 	
-	mov ax,8
-	mov ds,ax
-	mov es,ax
-	
 	mov ebx,[esp+48]
 	mov ecx,[esp+44]
 	mov edx,[esp+40]
 	
+	mov ax,ds
+	mov esi,1
+	cmp ax,8
+	je .call
+	
+	mov ax,8
+	mov ds,ax
+	mov es,ax
+	
 	mov ss,ax
 	add esp,0x00400000
-	
+	mov esi,0
+.call:
+	push esi
 	push ebx
 	push ecx
 	push edx
@@ -52,6 +59,10 @@ _int0e_asm:
 	call _int0d
 	add esp,16
 	
+	pop eax
+	cmp eax,1
+	je .ret
+	
 	sub esp,0x00400000
 	mov ss,[4096+12]
 	mov ebp,[4096+44]
@@ -65,32 +76,48 @@ _int0e_asm:
 	mov esp,ebp
 	
 	retf
+.ret:
+	pop es
+	pop ds
+	
+	popad
+	iretd
 _int0d_asm:
 	pushad
 	push ds
 	push es
 	
-	mov ax,8
-	mov ds,ax
-	mov es,ax
-	
 	mov ebx,[esp+48]
 	mov ecx,[esp+44]
 	mov edx,[esp+40]
 	
+	mov ax,ds
+	mov esi,1
+	cmp ax,8
+	je .call
+	
+	mov ax,8
+	mov ds,ax
+	mov es,ax
+	
 	mov ss,ax
 	add esp,0x00400000
-	
+	mov esi,0
+.call:
+	push esi
 	push ebx
 	push ecx
 	push edx
 	call _int0d
 	add esp,12
 	
+	pop eax
+	cmp eax,1
+	je .ret
+	
 	sub esp,0x00400000
 	mov ss,[4096+12]
 	mov ebp,[4096+44]
-	
 	pop es
 	pop ds
 	
@@ -100,6 +127,12 @@ _int0d_asm:
 	mov esp,ebp
 	
 	retf
+.ret:
+	pop es
+	pop ds
+	
+	popad
+	iretd
 _int0b_asm:
 	pushad
 	push ds
@@ -295,8 +328,8 @@ _app_startup_asm:
 	mov edx,[ebx]
 	mov ecx,[ebx+4]
 	
-	mov ax,ss
-	mov si,ax
+	mov eax,ss
+	mov esi,eax
 	mov es,ax
 	mov fs,ax
 	mov gs,ax
@@ -308,7 +341,7 @@ _app_startup_asm:
 	mov eax,[ebx+32]
 	mov cr3,eax
 	
-	mov ax,si
+	mov eax,esi
 	mov ds,ax
 	
 	push ecx

@@ -1,18 +1,18 @@
 #include "fexos.h"
 Bool runcmd(char* cmd){
-	static const char* info="Fexos (26) 2.2 [Xthoa]\n\
-	Compile Time: 2020-10-24 21:00\n\
+	static const char* info="Fexos (26) 2.3 [Xthoa]\n\
+	Compile Time: 2020-11-2 21:30\n\
 	Github: https://github.com/Xthoa/Fexos26\n";
 	static const char* help="Internal commands:\n\
-	help\t\tDisplay this help msg\n\
-	info\t\tDisplay os information\n\
+	help\tDisplay this help msg\n\
+	info\tDisplay os information\n\
 	ver\t\tDisplay version info\n\
 	cd\t\tChange working directory\n\
-	pwd\t\tShow working directory\n\
-	exit\t\tExit from shell\n";
+	pwd\t\tPrint working directory\n\
+	exit\tExit from shell\n";
 	if(cmd[0]=='\n' || cmd[0]==0)return True;
 	if(strcmp(cmd,"exit")==0)return False;
-	elif(strcmp(cmd,"ver")==0)puts("Fexos 2.2");
+	elif(strcmp(cmd,"ver")==0)puts("Fexos 2.3");
 	elif(strcmp(cmd,"info")==0)puts(info);
 	elif(strcmp(cmd,"help")==0){
 		puts(info);
@@ -40,17 +40,17 @@ Bool runcmd(char* cmd){
 		strcpy(fname,cmd);
 		if(cmd[i+1]!=0)args=cmd+i+1;
 		else args=NULL;
-		int tid=exec(fname,args);
-		if(tid==-1){
+		int task=exec(fname,args);
+		if(task==-1){
 			puts("shell: bad command");
 			return True;
 		}
-		wait(tid);
+		wait(task);
 	}
 	return True;
 }
 int start(int argc,char** argv){
-	puts("Fexos 2.1 Shell");
+	puts("Fexos 2.3 Shell v10");
 	while(1){
 		putchar('>');
 		char cmd[64]={0};
@@ -69,5 +69,6 @@ int start(int argc,char** argv){
 		int res=runcmd(cmd);
 		if(res==False)break;
 	}
+	puts("Shell exiting...");
 	return 0;
 }

@@ -19,3 +19,4 @@ extern _Gdtr gdtr;
 extern char* sysfont;
 extern int scrx,scry;
 extern Allocator sbh;
+extern int bgcol;

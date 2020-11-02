@@ -2,8 +2,10 @@ boot = boot\boot.bin boot\loader.bin
 kernel = kernel\start.bin
 app = app\shell.fex app\test.fex \
 	app\mem.fex app\cls.fex app\echo.fex \
-	app\run.fex
-need = rule.txt fsrule.txt kernel\system.font.txt
+	app\run.fex app\cpptest.fex app\color.fex \
+	app\dir.fex
+need = rule.txt fsrule.txt fsrule.system.txt fsrule.user.txt \
+	kernel\system.font.txt
 
 default:
 	make img

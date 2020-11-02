@@ -175,7 +175,9 @@ int int31api_memory(Descriptor* d,int ds,int dsbs,int eax,int ecx,int edx,int es
 int int31api_exec(Instance *inst,Cache* c,int dsbs,int eax,int ecx,int edx){
 	if(eax==60)return exec((char*)(dsbs+ecx),(char*)(dsbs+edx),FATHER,WAIT,ALL,inst->workdir);
 	elif(eax==25){
-		while(front_cache_wait(c)!=MSG_TASK_CHILDFIN);
+		//printf("%x\n",edx);
+		int i=0;
+		while(front_cache(c)!=MSG_TASK_CHILDFIN || count_cache(c,1)!=edx)dispint((((Htask)edx)->tid)*40,30,i++,BLACK,WHITE);
 		unexec();
 		pop_cache(c);
 		return read_cache(c);
@@ -221,9 +223,27 @@ int int31api_exec(Instance *inst,Cache* c,int dsbs,int eax,int ecx,int edx){
 			strcpy(name,inst->workdir);
 			strcat(name,usrn);
 		}
+		//puts(name);
+		//puts(dsbs+edx);
 		return exec((char*)(name),(char*)(dsbs+edx),FATHER,WAIT,ALL,inst->workdir);
 	}
 	return 0;
+}
+int int31api_adv_io(int eax,int edx,int esi,int edi){
+	if(eax==15)curpos.x=curpos.y=curpos.lim=0;
+	elif(eax==16)cls_bg();
+	elif(eax==17){
+		cls_bg();
+		curpos.x=curpos.y=curpos.lim=0;
+	}
+	elif(eax==18){
+		if(edx!=-1)curpos.x=edx;
+		if(esi!=-1)curpos.y=esi;
+		if(edi!=-1)curpos.lim=edi;
+	}
+	elif(eax==69)putch(3);
+	elif(eax==70)return bgcol;
+	elif(eax==71)bgcol=edx;
 }
 int int31api(Instance* inst,int eax,int ebx,int ecx,int edx,int esi,int edi){
 	int ds=inst->a.ss;
@@ -236,17 +256,7 @@ int int31api(Instance* inst,int eax,int ebx,int ecx,int edx,int esi,int edi){
 	elif(eax==55||eax==56||eax==44||(63<=eax&&eax<66)||eax==68)return int31api_file_io(inst,dsbs,eax,ecx,edx,esi);
 	elif((32<=eax&&eax<38)||(44<=eax&&eax<55)||eax==66||eax==67)return int31api_common_io(c,dsbs,eax,ecx,edx,esi,edi);
 	elif((24<=eax && eax<32) || eax==60)return int31api_exec(inst,c,dsbs,eax,ecx,edx);
-	elif(eax==15)curpos.x=curpos.y=curpos.lim=0;
-	elif(eax==16)cls_bg();
-	elif(eax==17){
-		cls_bg();
-		curpos.x=curpos.y=curpos.lim=0;
-	}
-	elif(eax==18){
-		if(edx!=-1)curpos.x=edx;
-		if(esi!=-1)curpos.y=esi;
-		if(edi!=-1)curpos.lim=edi;
-	}
+	elif((15<=eax && eax<19) || (69<=eax && eax<72))return int31api_adv_io(eax,edx,esi,edi);
 	elif(eax==57)strcpy(inst->workdir,dsbs+esi);
 	elif(eax==58)strcat(inst->workdir,dsbs+esi);
 	elif(eax==59){
@@ -264,11 +274,6 @@ int int31api(Instance* inst,int eax,int ebx,int ecx,int edx,int esi,int edi){
 		strcat(inst->workdir,dsbs+esi);
 		strcat(inst->workdir,"/");
 	}
-	elif(eax==62){
-		return (int)inst->workdir-(int)inst->dataglob;
-	}
-	elif(eax==69){
-		putch(3);
-	}
+	elif(eax==62)return (int)inst->workdir-(int)inst->dataglob;
 	return 0;
 }

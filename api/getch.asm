@@ -12,13 +12,17 @@ _getch:
 	ret
 global _write_stdin
 _write_stdin:
+	push ecx
 	mov eax,11
-	mov ecx,[esp+4]
+	mov ecx,[esp+8]
 	int 0x31
+	pop ecx
 	ret
 global _putback
 _putback:
+	push ecx
 	mov eax,12
-	mov ecx,[esp+4]
+	mov ecx,[esp+8]
 	int 0x31
+	pop ecx
 	ret

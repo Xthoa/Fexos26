@@ -2,6 +2,7 @@
 Bool kbd_flag;	//0 !insert ctrl alt caps !num shift e0
 Allocator gdtaloc;
 _Gdtr gdtr;
+int bgcol;
 __attribute__((section(".entry")))
 void entry(){
 	static const char keytabs0[0x59]={
@@ -54,6 +55,7 @@ void entry(){
 	sysfont=malloc_page(1);
 	sysfont=push_page(sysfont,1);
 	StaticFile* sf=fopen("rofs/system/system.font");
+	bgcol=SILVER;
 	char* pos=filepos(sf);
 	//printf("%x\n",pos);
 	memcpy(sysfont,pos,2048);
@@ -64,7 +66,7 @@ void entry(){
 	task_init(app,manager);
 	init_pit();
 	enable_pic(0xff78);
-	puts("Welcome to Fexos 2.2");
+	puts("Welcome to Fexos 2.3");
 	task_ready(app);
 	while(1){
 		if(fifo_size(&cac)>0){
@@ -102,7 +104,7 @@ void entry(){
 		}
 		hlt();
 	}
-	puts("Fexos 2.2 Exiting...");
+	puts("Fexos 2.3 Exiting...");
 	enable_pic(0xffff);
 	return;
 }
@@ -214,7 +216,7 @@ void app_startup(char* name,char* args,Htask father,AppOption ao,char* workdir){
 	//printf("%x %x %x %x %x\n",(int)app_startup_asm&0xfffff000,pdelin,pte0lin,pte1lin);
 	//delay(40);
 	
-	local_page(pdelin,pte0,pte0lin,0x3000,0,0x3,12);
+	local_page(pdelin,pte0,pte0lin,0x9000,0,0x9,8);
 	local_page(pdelin,pte0,pte0lin,0x100000,0,0x100,7);
 	
 	inst->pm.pde=pde;
@@ -242,16 +244,18 @@ void app_startup(char* name,char* args,Htask father,AppOption ao,char* workdir){
 	
 	afree(&gdtaloc,sc,2);
 	
+	memset(inst,0,PAGE_SIZE);
 	pop_page(1);
 	free_page((int)inst_phy>>12,1);
 	
+	memset(datalin_krnl,0,PAGE_SIZE*(ss+bss));
 	pop_page(ss+bss);
 	free_page(data>>12,ss+bss);
 	
+	memset(pdelin,0,PAGE_SIZE*3);
 	pop_page(3);
 	free_page(pdepte>>12,3);
 	
-	free_page((int)self->pte>>12,1);
 	write_cache(self->c,MSG_TASK_CHILDFIN);
 	write_cache(self->c,self);
 	task_delete(self);

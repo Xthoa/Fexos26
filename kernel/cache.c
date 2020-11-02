@@ -73,6 +73,12 @@ int front_cache_wait(Cache* c){
 	while(fifo_size(c)==0);
 	return front_cache(c);
 }
+int count_cache(Cache* c,int count){
+	if(readable(c)==0)return 0;
+	if(c->write==(c->read+count))return 0;
+	int ret=c->buf[c->read+count];
+	return ret;
+}
 void pop_cache(Cache* c){
 	if(readable(c)==0)return;
 	c->read++;

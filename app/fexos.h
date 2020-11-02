@@ -27,12 +27,12 @@ void clcur();
 void cls_cur();
 int printf(const char* format,...);
 void dispmem();
-int exec(char* name,char* args);
+Htask exec(char* name,char* args);
 void* malloc_page(int size);
 void* malloc_raw(int size);
 char* push_malloc_page(int pages);
 char* push_page(char* raw,int pages);
-void wait();
+void wait(Htask task);
 void wait_hlt();
 void wait_send(int tid);
 void wait_send_hlt(int tid);
@@ -57,6 +57,8 @@ void show_cur_dirs();
 StaticFile* create(char* name,int flag,int len);
 void rbdir();
 void oflush();
+int get_color();
+void set_color(int color); 
 #ifdef __cplusplus
 }
 #endif

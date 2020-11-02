@@ -14,6 +14,19 @@ void dispchar(int row,int col,char ch,short back,short color){
 		}
 	}
 }
+void dispstr(int row,int col,char* str,short back,short color){
+	while(*str)dispchar(row,col++,*(str++),back,color);
+}
+void dispint(int row,int col,int val,short back,short color){
+	int dig=8;
+	char buf[9]={0};
+	int y=dig-1;
+	while(dig--){
+		buf[y--]=transdig(val&0xf);
+		val>>=4;
+	}
+	dispstr(row,col,buf,back,color);
+}
 Curpos curpos;
 void oputch(char c){
 	if(c==3){
@@ -60,7 +73,7 @@ void oputch(char c){
 		Position to={curpos.x,curpos.y+1};
 		Position from={curpos.x,curpos.y};
 		vrammove(to,from,curpos.lim-curpos.y);
-		dispchar(curpos.x,curpos.y,c,BLACK,SILVER);
+		dispchar(curpos.x,curpos.y,c,bgcol>>16,bgcol&0xffff);
 		curpos.y++;
 		curpos.lim++;
 	}

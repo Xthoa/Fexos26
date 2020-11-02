@@ -127,7 +127,7 @@ void task_delete(Htask task){
 		}
 	}
 }
-int exec(char* fname,char* args,int incac,int waits,int io,char* workdir){
+Htask exec(char* fname,char* args,int incac,int waits,int io,char* workdir){
 	int i;
 	Htask t;
 	int stack,stack_lin,esp;
@@ -151,8 +151,9 @@ int exec(char* fname,char* args,int incac,int waits,int io,char* workdir){
 	*(AppOption*)(esp+16)=ao;
 	*(char**)(esp+28)=workdir;
 	task_ready(t);
-	return t->tid;
+	return t;
 }
 void unexec(){
 	free_page((int)pop_page(4)>>12,4);
+	free_page((int)pop_page(1)>>12,1);
 }
